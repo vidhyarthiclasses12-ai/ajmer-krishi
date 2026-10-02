@@ -251,25 +251,28 @@ function wire() {
     if (phone.length===10 && confirm("User ban gaya. WhatsApp me message kholen?")) window.open("https://wa.me/91"+phone+"?text="+msg);
     show("users");
   };
-  const fillGp = (tehId, gpId, villId) => {
+  const fillGp = (tehId, gpId, villId, keepGp) => {
     const teh = document.getElementById(tehId);
     const gp = document.getElementById(gpId);
     if (!teh || !gp) return;
     const gps = Object.keys((window.LGD||{})[teh.value]||{});
-    gp.innerHTML = gps.map(g=>`<option>${g}</option>`).join("");
-    const vill = document.getElementById(villId);
+    const selected = keepGp ? gp.value : gps[0];
+    gp.innerHTML = gps.map(g=>`<option ${g===selected?"selected":""}>${g}</option>`).join("");
+    if (selected) gp.value = selected;
+    const vill = villId && document.getElementById(villId);
     if (!vill) return;
     const list = ((window.LGD||{})[teh.value]||{})[gp.value]||[];
     vill.innerHTML = list.map(v=>`<option>${v}</option>`).join("");
   };
   if (document.getElementById("cteh")) {
-    fillGp("cteh","cgp","cvills");
-    document.getElementById("cteh").onchange = () => fillGp("cteh","cgp","cvills");
-    document.getElementById("cgp").onchange = () => fillGp("cteh","cgp","cvills");
+    fillGp("cteh","cgp","cvills", false);
+    document.getElementById("cteh").onchange = () => fillGp("cteh","cgp","cvills", false);
+    document.getElementById("cgp").onchange = () => fillGp("cteh","cgp","cvills", true);
   }
   if (document.getElementById("mteh")) {
-    fillGp("mteh","mgp", null);
-    document.getElementById("mteh").onchange = () => fillGp("mteh","mgp", null);
+    fillGp("mteh","mgp", null, false);
+    document.getElementById("mteh").onchange = () => fillGp("mteh","mgp", null, false);
+    document.getElementById("mgp").onchange = () => fillGp("mteh","mgp", null, true);
   }
   const addc = document.getElementById("addc");
   if (addc) addc.onclick = async () => {
