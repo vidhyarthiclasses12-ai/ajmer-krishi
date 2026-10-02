@@ -61,6 +61,15 @@ function login() {
     <label>Password</label><input id="p" type="password" />
     <p id="err" style="color:#b91c1c"></p>
     <button class="go" id="go" style="width:100%">Login</button>
+    <hr>
+    <h3>Password reset with OTP</h3>
+    <label>Username</label><input id="ru" />
+    <label>Mobile number</label><input id="rm" />
+    <button class="line" id="sendotp" type="button">Send OTP</button>
+    <label>OTP</label><input id="rotp" />
+    <label>New password</label><input id="rnp" type="password" />
+    <button class="go" id="dootp" type="button">Verify and reset</button>
+    <p id="rmsg" class="muted"></p>
   </div></div>`;
 }
 function shell() {
@@ -119,7 +128,7 @@ function farmerTable(rows) {
   return `<div class="card"><h3>Farmers</h3>${list.length?`<table><tr><th>Name</th><th>Cluster</th><th>Village</th><th>Crop</th></tr>${list.map(r=>`<tr><td>${r.payload.farmer}</td><td>${r.cluster}</td><td>${r.village||""}</td><td>${r.payload.crop||""}</td></tr>`).join("")}</table>`:"<p class='muted'>No records found.</p>"}</div>`;
 }
 function formView(rows) {
-  const opts = Object.keys(blocks).map(b => `<option ${b===me.cluster?"selected":""}>${b}</option>`).join("");
+  const opts = Object.keys(blocks).map(b => `<option value="${b}" ${b===me.cluster?"selected":""}>${b}</option>`).join("");
   return `<div class="card"><h3>+ New Information</h3>
     <div class="grid">
       <div><label>Cluster</label><select id="cluster" ${me.role==="admin"?"":"disabled"}>${opts}</select></div>
@@ -147,7 +156,20 @@ function reportView(rows) {
   </div>`).join("")||"<p class='muted'>No records found.</p>"}</div>`;
 }
 function clusterView() {
-  return `<div class="card"><h3>Clusters</h3>${Object.entries(blocks).map(([b,vs])=>`<p><b>${b}</b><br><span class="muted">${vs.join(", ")}</span></p>`).join("")}</div>`;
+  if (me.role !== "admin") return `<div class="card"><h3>Clusters</h3>${Object.keys(blocks).join(", ")}</div>`;
+  return `<div class="card"><h3>Add district / block / cluster</h3>
+    <div class="grid"><div><label>District</label><input id="cdist" value="अजमेर" /></div>
+    <div><label>Block</label><input id="cblock" /></div>
+    <div><label>Cluster name</label><input id="cname" /></div></div>
+    <button class="go" id="addc">Add cluster</button></div>
+    <div class="card"><h3>Add village / gram panchayat</h3>
+    <label>Cluster</label><select id="pc">${Object.entries(blocks).map(([n,c])=>`<option value="${c.id}">${n}</option>`).join("")}</select>
+    <label>Village</label><input id="pv" /><label>Gram panchayat</label><input id="pg" />
+    <button class="go" id="addp">Add village</button></div>
+    <div class="card"><h3>Current clusters</h3>
+    ${Object.entries(blocks).map(([n,c])=>`<div style="margin:8px 0"><b>${c.district} · ${c.block} · ${n}</b> <button class="bad" data-dc="${c.id}">Delete cluster</button>
+      <div class="muted">${(c.places||[]).map(p=>p.village+" / "+p.gram_panchayat+` <button data-dp="${p.id}">x</button>`).join(", ")||"no village"}</div></div>`).join("")}
+    </div>`;
 }
 function excelView() {
   return `<div class="card"><h3>Excel Import / Export</h3><input id="xf" type="file" accept=".xlsx" /><button class="go" id="xu">Upload and check</button><div id="xr"></div><p><a href="/api/export">Cluster / consolidated export</a></p></div>`;
@@ -158,18 +180,22 @@ function logView(rows) {
 }
 async function userView() {
   const users = await api("/api/users");
+  const otps = await api("/api/otps");
   return `<div class="card"><h3>New user</h3><div class="grid">
     <div><label>Name</label><input id="nn" /></div><div><label>Role</label><select id="nr"><option value="krishi_sakhi">Krishi Sakhi</option><option value="crp">CRP</option></select></div>
     <div><label>Cluster</label><select id="nc">${Object.keys(blocks).map(b=>`<option>${b}</option>`).join("")}</select></div>
+    <div><label>Mobile</label><input id="nm" /></div>
     <div><label>Username</label><input id="nu" /></div><div><label>Password</label><input id="np" /></div></div>
     <button class="go" id="nuadd">Add user</button></div>
     <div class="card"><h3>Users</h3>${users.filter(u=>u.active!==0).map(u=>`<div style="margin:6px 0">${u.name} · ${u.role} · ${u.cluster} · ${u.username} ${u.id===me.id?"":`<button class="bad" data-del="${u.id}">Delete</button>`}</div>`).join("")}</div>
+    <div class="card"><h3>Latest OTP</h3>${otps.map(o=>`<div>${o.username} · ${o.mobile} · ${o.code} · ${o.used?"used":"active"}</div>`).join("")||"<p class='muted'>No OTP yet</p>"}</div>
     <div class="card"><h3>Reset password</h3><label>Username</label><input id="ru2" /><label>New password</label><input id="rp2" /><button class="go" id="doreset">Reset</button></div>`;
 }
 function fillVillages() {
   const b = document.getElementById("cluster");
   if (!b) return;
-  document.getElementById("village").innerHTML = (blocks[b.value]||[]).map(v=>`<option>${v}</option>`).join("");
+  const places = (blocks[b.value] && blocks[b.value].places) || [];
+  document.getElementById("village").innerHTML = places.map(v=>`<option>${v.village}</option>`).join("");
 }
 function wire() {
   fillVillages();
@@ -202,13 +228,24 @@ function wire() {
     show("users");
   });
   const add = document.getElementById("nuadd");
-  if (add) add.onclick = async () => { await api("/api/users", { method:"POST", body: JSON.stringify({ name:nn.value, role:nr.value, cluster:nc.value, username:nu.value, password:np.value }) }); alert("User added"); show("users"); };
+  if (add) add.onclick = async () => { await api("/api/users", { method:"POST", body: JSON.stringify({ name:nn.value, role:nr.value, cluster:nc.value, mobile:nm.value, username:nu.value, password:np.value }) }); alert("User added"); show("users"); };
+  const addc = document.getElementById("addc");
+  if (addc) addc.onclick = async () => { await api("/api/clusters", { method:"POST", body: JSON.stringify({ district:cdist.value, block:cblock.value, name:cname.value }) }); blocks = await api("/api/meta"); show("clusters"); };
+  const addp = document.getElementById("addp");
+  if (addp) addp.onclick = async () => { await api("/api/places", { method:"POST", body: JSON.stringify({ cluster_id:pc.value, village:pv.value, gram_panchayat:pg.value }) }); blocks = await api("/api/meta"); show("clusters"); };
+  document.querySelectorAll("[data-dc]").forEach(b => b.onclick = async () => { if (!confirm("Delete this cluster?")) return; await api("/api/clusters/"+b.dataset.dc, { method:"DELETE" }); blocks = await api("/api/meta"); show("clusters"); });
+  document.querySelectorAll("[data-dp]").forEach(b => b.onclick = async () => { await api("/api/places/"+b.dataset.dp, { method:"DELETE" }); blocks = await api("/api/meta"); show("clusters"); });
   const dr = document.getElementById("doreset");
   if (dr) dr.onclick = async () => { await api("/api/admin/reset", { method:"POST", body: JSON.stringify({ username:ru2.value, password:rp2.value }) }); alert("Password updated"); };
 }
 function bind() {
   const go = document.getElementById("go");
-  if (go) { go.onclick = async () => { try { await api("/api/login", { method:"POST", body: JSON.stringify({ username:u.value, password:p.value }) }); boot(); } catch(e){ err.textContent = e.message; } }; return; }
+  if (go) {
+    go.onclick = async () => { try { await api("/api/login", { method:"POST", body: JSON.stringify({ username:u.value, password:p.value }) }); boot(); } catch(e){ err.textContent = e.message; } };
+    document.getElementById("sendotp").onclick = async () => { try { const r = await api("/api/otp/send", { method:"POST", body: JSON.stringify({ username:ru.value, mobile:rm.value }) }); rmsg.textContent = r.message; } catch(e){ rmsg.textContent = e.message; } };
+    document.getElementById("dootp").onclick = async () => { try { await api("/api/otp/reset", { method:"POST", body: JSON.stringify({ username:ru.value, otp:rotp.value, password:rnp.value }) }); rmsg.textContent = "Password updated. Login now."; } catch(e){ rmsg.textContent = e.message; } };
+    return;
+  }
   document.getElementById("out").onclick = async () => { await api("/api/logout", { method:"POST" }); me=null; render(); };
   document.querySelectorAll("aside button").forEach(b => b.onclick = () => show(b.dataset.t));
   show(tab);
