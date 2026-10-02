@@ -76,12 +76,10 @@ def init():
              generate_password_hash("Ajmer@2026")),
         )
     con.execute("UPDATE users SET active=0 WHERE username IN ('clusterA','crpA')")
-    if not con.execute("SELECT 1 FROM clusters").fetchone():
-        for block, villages in BLOCKS.items():
-            cid = uuid.uuid4().hex
-            con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (cid, "अजमेर", block, block))
-            for v in villages:
-                con.execute("INSERT INTO places VALUES (?,?,?,?)", (uuid.uuid4().hex, cid, v, v))
+    old_names = ("अजमेर ग्रामीण","बड़ल्या","पीसांगन","किशनगढ़ (सिलोरा)","नसीराबाद","श्रीनगर","अराई","भिनाय","केकड़ी","सरवाड़","सावर")
+    q = ",".join("?" * len(old_names))
+    con.execute("DELETE FROM places WHERE cluster_id IN (SELECT id FROM clusters WHERE name IN (%s))" % q, old_names)
+    con.execute("DELETE FROM clusters WHERE name IN (%s)" % q, old_names)
     con.commit()
     con.close()
 
@@ -194,23 +192,11 @@ def me():
         return jsonify(None)
     return jsonify({"id": u["id"], "name": u["name"], "role": u["role"], "cluster": u["cluster"], "username": u["username"], "mobile": u["mobile"]})
 
-TEHSILS = {
-  "अजमेर": ["अजयसर","अराड़का","बाबायाचा","बालवंता","बड़गांव","बीर","भंवता","भूडोल","बुबानी","चचियावास","दौराई","डूमड़ा","गगवाना","गेगल","घूघरा","हटूंडी","लोहागल","मियापुर","नारेली","पालरा","पुष्कर","सेदरिया"],
-  "पीसांगन": ["पीसांगन","गोला","केसरपुरा","बुधवाड़ा","जेठाना","गणहेड़ा","बानसेली","देव नगर"],
-  "पुष्कर": ["पुष्कर","गणहेड़ा","बानसेली","तिलोड़ा","लेस्वा"],
-  "किशनगढ़": ["किशनगढ़","सिलोरा","रूपनगढ़","हरमाड़ा","बांदरसिंदरी","पाटन","मोतीपुरा","रलावता"],
-  "नसीराबाद": ["नसीराबाद","तबाजी","माकरवाली","रामसर","सरसुंडा","कादेल"],
-  "श्रीनगर": ["श्रीनगर","रामगढ़","खारवा","देलवाड़ा"],
-  "अराई": ["अराई","बगहेरा","जूनिया","घाटियाली","देवगांव"],
-  "केकड़ी": ["केकड़ी","जूनिया","घाटियाली","धूंधरी","गुल्गांव","बिसुंदनी"],
-  "भिनाय": ["भिनाय","बांदनवाड़ा","बारली","देवलिया कलां","हीरापुरा","चापानेरी"],
-  "सरवाड़": ["सरवाड़","टांटुटी","रामगढ़","सांकलिया"],
-  "सावर": ["सावर","रामगढ़","खारवा","टीटड़िया"]
-}
+TEHSILS = ["अजमेर","पीसांगन","पुष्कर","किशनगढ़","नसीराबाद","श्रीनगर","अराई","केकड़ी","भिनाय","सरवाड़","सावर"]
 
 @app.get("/api/directory")
 def directory():
-    return jsonify({"district": "अजमेर", "tehsils": TEHSILS, "source": "Ajmer tehsil-village list aligned with Apna Khata revenue tehsils"})
+    return jsonify({"district": "अजमेर", "tehsils": TEHSILS})
 
 @app.get("/api/meta")
 def meta():
