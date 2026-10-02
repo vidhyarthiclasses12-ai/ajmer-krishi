@@ -49,25 +49,23 @@ async function api(url, opt={}) {
 }
 async function boot() {
   me = await fetch("/api/me").then(r => r.json());
-  if (me) blocks = await api("/api/meta");
+  if (me) { blocks = await api("/api/meta"); window.TEHSILS = (await api("/api/directory")).tehsils; }
   render();
 }
 function render() { document.getElementById("app").innerHTML = me ? shell() : login(); bind(); }
 function login() {
   return `<div class="login-wrap"><div class="login">
     <h2 style="color:#166534;margin-top:0">Ajmer Agriculture Information</h2>
-    <p class="muted">Cluster-wise information system</p>
     <label>Username</label><input id="u" />
     <label>Password</label><input id="p" type="password" />
     <p id="err" style="color:#b91c1c"></p>
     <button class="go" id="go" style="width:100%">Login</button>
-    <p class="muted">Password reset abhi admin Users se karega.</p>
-  </div></div>`;
+    </div></div>`;
 }
 function shell() {
-  const items = [["dash","Dashboard"],["farmers","Farmers"],["forms","Information Forms"],["photos","Photos"],["reports","Reports"],["clusters","Clusters"],["users","Users"],["excel","Excel Import / Export"],["log","Activity Log"],["settings","Settings"]];
+  const items = [["dash","Dashboard"],["profile","User Profile"],["farmers","Farmers"],["forms","Information Forms"],["photos","Photos"],["reports","Reports"],["clusters","Clusters"],["users","Users"],["excel","Excel Import / Export"],["log","Activity Log"],["settings","Settings"]];
   return `<div class="app"><aside><h2>MENU</h2>${items.map(([id,label]) => `<button data-t="${id}" class="${tab===id?"active":""}">${label}</button>`).join("")}</aside>
-    <main><header><b>Ajmer Agriculture Information</b><span>${me.name} · ${me.role.toUpperCase()} <button id="out" class="line">Logout</button></span></header>
+    <main><header><b>Ajmer Agriculture Information</b><span>${me.name} · ${postOf(me.role)} <button id="out" class="line">Logout</button></span></header>
     <div class="content" id="panel"></div></main></div>`;
 }
 async function show(name) {
@@ -75,17 +73,34 @@ async function show(name) {
   document.querySelectorAll("aside button").forEach(b => b.classList.toggle("active", b.dataset.t===name));
   const panel = document.getElementById("panel");
   const rows = ["dash","farmers","forms","photos","reports","log"].includes(name) ? await api("/api/records") : [];
+  if (name==="profile") panel.innerHTML = profileView();
   if (name==="dash") panel.innerHTML = dash(rows);
   if (name==="farmers") panel.innerHTML = farmerTable(rows);
   if (name==="forms") panel.innerHTML = formView(rows);
   if (name==="photos") panel.innerHTML = gallery(rows);
   if (name==="reports") panel.innerHTML = reportView(rows);
   if (name==="clusters") panel.innerHTML = clusterView();
-  if (name==="users") panel.innerHTML = me.role==="admin" ? await userView() : `<div class="card">Only admin can manage users.</div>`;
+  if (name==="users") panel.innerHTML = (me.role==="admin" || me.role==="district_admin") ? await userView() : `<div class="card">Only admin can manage users.</div>`;
   if (name==="excel") panel.innerHTML = excelView();
   if (name==="log") panel.innerHTML = logView(rows);
   if (name==="settings") panel.innerHTML = `<div class="card"><h3>Settings</h3><p>Cluster: ${me.cluster}</p><p>Role: ${me.role}</p><p class="muted">Password change is done by admin from Users.</p></div>`;
   wire(rows);
+}
+function postOf(role) {
+  if (role==="admin") return "System Admin";
+  if (role==="district_admin") return "Agriculture Research Officer";
+  if (role==="crp") return "CRP";
+  return "Krishi Sakhi";
+}
+function profileView() {
+  return `<div class="card"><h3>User Profile</h3>
+    <p>Name: <b>${me.name}</b></p>
+    <p>Post: <b>${postOf(me.role)}</b></p>
+    <p>Role: <b>${me.role}</b></p>
+    <p>Cluster: <b>${me.cluster}</b></p>
+    <p>Username: <b>${me.username||"—"}</b></p><p>Mobile: <b>${me.mobile||"—"}</b></p>
+    <p class="muted">${me.role==="admin"?"System Admin changes, users aur clusters manage karta hai.":"District Admin sabhi clusters ka data dekh sakta hai."}</p>
+  </div>`;
 }
 function dash(rows) {
   const farmers = new Set(rows.map(r => r.payload.farmer).filter(Boolean)).size;
@@ -105,7 +120,7 @@ function dash(rows) {
         <button class="line" onclick="show('reports')">View Forms</button>
         <div style="margin-top:8px"><button class="line" onclick="show('photos')">View Photos</button></div>
       </div>
-      <div class="card"><h3>System</h3><p>Current user: <b>${me.name}</b><br>Role: <b>${me.role.toUpperCase()}</b><br>Cluster: <b>${me.cluster}</b></p></div>
+      <div class="card"><h3>System</h3><p>Current user: <b>${me.name}</b><br>Post: <b>${postOf(me.role)}</b><br>Cluster: <b>${me.cluster}</b></p></div>
     </div>
     <div class="card"><h3>Recent Forms</h3>${rows.length? table(rows.slice(0,8)) : "<p class='muted'>No records found.</p>"}</div>`;
 }
@@ -148,10 +163,12 @@ function reportView(rows) {
   </div>`).join("")||"<p class='muted'>No records found.</p>"}</div>`;
 }
 function clusterView() {
-  if (me.role !== "admin") return `<div class="card"><h3>Clusters</h3>${Object.keys(blocks).join(", ")}</div>`;
-  return `<div class="card"><h3>Add district / block / cluster</h3>
-    <div class="grid"><div><label>District</label><input id="cdist" value="अजमेर" /></div>
-    <div><label>Block</label><input id="cblock" /></div>
+  if (me.role!=="admin" && me.role!=="district_admin") return `<div class="card"><h3>Clusters</h3>${Object.keys(blocks).join(", ")}</div>`;
+  const tehsilOpts = Object.keys(window.TEHSILS||{}).map(t=>`<option>${t}</option>`).join("");
+  return `<div class="card"><h3>Add cluster</h3>
+    <div class="grid"><div><label>District</label><input id="cdist" value="अजमेर" readonly /></div>
+    <div><label>Tehsil</label><select id="cteh">${tehsilOpts}</select></div>
+    <div><label>Village</label><select id="cvill"></select></div>
     <div><label>Cluster name</label><input id="cname" /></div></div>
     <button class="go" id="addc">Add cluster</button></div>
     <div class="card"><h3>Add village / gram panchayat</h3>
@@ -159,8 +176,8 @@ function clusterView() {
     <label>Village</label><input id="pv" /><label>Gram panchayat</label><input id="pg" />
     <button class="go" id="addp">Add village</button></div>
     <div class="card"><h3>Current clusters</h3>
-    ${Object.entries(blocks).map(([n,c])=>`<div style="margin:8px 0"><b>${c.district} · ${c.block} · ${n}</b> <button class="bad" data-dc="${c.id}">Delete cluster</button>
-      <div class="muted">${(c.places||[]).map(p=>p.village+" / "+p.gram_panchayat+` <button data-dp="${p.id}">x</button>`).join(", ")||"no village"}</div></div>`).join("")}
+    ${Object.entries(blocks).map(([n,c])=>`<div style="margin:8px 0"><b>${c.district} · ${c.block} · ${n}</b> ${me.role==="admin"?`<button class="bad" data-dc="${c.id}">Delete cluster</button>`:""}
+      <div class="muted">${(c.places||[]).map(p=>p.village+" / "+p.gram_panchayat+(me.role==="admin"?` <button data-dp="${p.id}">x</button>`:"")).join(", ")||"no village"}</div></div>`).join("")}
     </div>`;
 }
 function excelView() {
@@ -174,12 +191,12 @@ async function userView() {
   const users = await api("/api/users");
   const otps = await api("/api/otps");
   return `<div class="card"><h3>New user</h3><div class="grid">
-    <div><label>Name</label><input id="nn" /></div><div><label>Role</label><select id="nr"><option value="krishi_sakhi">Krishi Sakhi</option><option value="crp">CRP</option></select></div>
+    <div><label>Name</label><input id="nn" /></div><div><label>Role</label><select id="nr"><option value="district_admin">District Admin · Agriculture Research Officer</option><option value="krishi_sakhi">Krishi Sakhi</option><option value="crp">CRP</option></select></div>
     <div><label>Cluster</label><select id="nc">${Object.keys(blocks).map(b=>`<option>${b}</option>`).join("")}</select></div>
     <div><label>Mobile</label><input id="nm" /></div>
     <div><label>Username</label><input id="nu" /></div><div><label>Password</label><input id="np" /></div></div>
     <button class="go" id="nuadd">Add user</button></div>
-    <div class="card"><h3>Users</h3>${users.filter(u=>u.active!==0).map(u=>`<div style="margin:6px 0">${u.name} · ${u.role} · ${u.cluster} · ${u.username} ${u.id===me.id?"":`<button class="bad" data-del="${u.id}">Delete</button>`}</div>`).join("")}</div>
+    <div class="card"><h3>Users</h3>${users.filter(u=>u.active!==0).map(u=>`<div style="margin:6px 0">${u.name} · ${u.role} · ${u.cluster} · ${u.username} ${me.role==="admin" && u.id!==me.id?`<button class="bad" data-del="${u.id}">Delete</button>`:""}</div>`).join("")}</div>
     <div class="card"><h3>Latest OTP</h3>${otps.map(o=>`<div>${o.username} · ${o.mobile} · ${o.code} · ${o.used?"used":"active"}</div>`).join("")||"<p class='muted'>No OTP yet</p>"}</div>
     <div class="card"><h3>Reset password</h3><label>Username</label><input id="ru2" /><label>New password</label><input id="rp2" /><button class="go" id="doreset">Reset</button></div>`;
 }
@@ -228,7 +245,15 @@ function wire() {
     show("users");
   };
   const addc = document.getElementById("addc");
-  if (addc) addc.onclick = async () => { await api("/api/clusters", { method:"POST", body: JSON.stringify({ district:cdist.value, block:cblock.value, name:cname.value }) }); blocks = await api("/api/meta"); show("clusters"); };
+  const fillTeh = () => { const sel=document.getElementById("cteh"); const v=document.getElementById("cvill"); if(!sel||!v) return; v.innerHTML=(window.TEHSILS[sel.value]||[]).map(x=>`<option>${x}</option>`).join(""); };
+  if (document.getElementById("cteh")) { fillTeh(); document.getElementById("cteh").onchange=fillTeh; }
+  if (addc) addc.onclick = async () => {
+    const created = await api("/api/clusters", { method:"POST", body: JSON.stringify({ district:cdist.value, block:cteh.value, name:cname.value }) });
+    const meta = await api("/api/meta");
+    const cid = meta[cname.value] && meta[cname.value].id;
+    if (cid) await api("/api/places", { method:"POST", body: JSON.stringify({ cluster_id:cid, village:cvill.value, gram_panchayat:cvill.value }) });
+    blocks = await api("/api/meta"); show("clusters");
+  };
   const addp = document.getElementById("addp");
   if (addp) addp.onclick = async () => { await api("/api/places", { method:"POST", body: JSON.stringify({ cluster_id:pc.value, village:pv.value, gram_panchayat:pg.value }) }); blocks = await api("/api/meta"); show("clusters"); };
   document.querySelectorAll("[data-dc]").forEach(b => b.onclick = async () => { if (!confirm("Delete this cluster?")) return; await api("/api/clusters/"+b.dataset.dc, { method:"DELETE" }); blocks = await api("/api/meta"); show("clusters"); });
