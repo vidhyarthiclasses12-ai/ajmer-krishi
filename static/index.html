@@ -1,40 +1,50 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>अजमेर कृषि सखी पोर्टल</title>
+<title>Ajmer Agriculture Information</title>
 <style>
-  :root { --g:#124c29; --leaf:#1b6b3a; --sand:#f6f3ea; --line:#e3ddd0; }
+  :root { --side:#14532d; --side2:#166534; --bg:#f3f4f6; --line:#e5e7eb; --ink:#111827; }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:"Segoe UI",sans-serif; background:var(--sand); color:#1c241c; }
-  header { background:var(--g); color:#fff; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; }
-  .wrap { max-width:1000px; margin:0 auto; padding:16px; }
-  .card { background:#fff; border:1px solid var(--line); border-radius:14px; padding:14px; margin-bottom:12px; }
+  body { margin:0; font-family:"Segoe UI",sans-serif; background:var(--bg); color:var(--ink); }
   button, input, select, textarea { font:inherit; }
-  button { border:0; border-radius:10px; padding:9px 12px; font-weight:700; cursor:pointer; }
-  .go { background:var(--leaf); color:#fff; } .line { background:#fff; border:1px solid var(--line); } .bad { background:#fee4e2; color:#b42318; }
-  input, select, textarea { width:100%; border:1px solid var(--line); border-radius:10px; padding:9px; margin-top:4px; }
+  button { cursor:pointer; border:0; border-radius:8px; padding:8px 12px; font-weight:700; }
+  .go { background:#166534; color:#fff; } .line { background:#fff; border:1px solid #bbf7d0; color:#166534; } .bad { background:#fee2e2; color:#b91c1c; }
+  input, select, textarea { width:100%; border:1px solid var(--line); border-radius:8px; padding:8px; margin-top:4px; }
   label { font-size:13px; font-weight:700; display:block; margin-top:10px; }
-  .tabs { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px; }
-  .tabs button.active { background:var(--leaf); color:#fff; }
+  .login-wrap { min-height:100vh; display:grid; place-items:center; }
+  .login { width:380px; background:#fff; border-radius:16px; padding:22px; box-shadow:0 8px 24px rgba(0,0,0,.06); }
+  .app { display:grid; grid-template-columns:230px 1fr; min-height:100vh; }
+  aside { background:var(--side); color:#fff; padding:16px 10px; }
+  aside h2 { font-size:13px; letter-spacing:.08em; margin:8px 12px 14px; }
+  aside button { display:flex; width:100%; text-align:left; background:transparent; color:#d1fae5; border-radius:8px; margin-bottom:4px; }
+  aside button.active { background:var(--side2); color:#fff; }
+  main { display:flex; flex-direction:column; }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:12px 18px; display:flex; justify-content:space-between; align-items:center; }
+  header b { color:#166534; font-size:18px; }
+  .content { padding:18px; }
+  .card { background:#fff; border-radius:12px; padding:16px; border:1px solid #eef2f7; margin-bottom:12px; }
+  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:12px 0; }
+  .stat { background:#fff; border-radius:12px; padding:14px; border:1px solid #eef2f7; }
+  .stat b { font-size:28px; display:block; }
+  .muted { color:#6b7280; font-size:13px; }
   table { width:100%; border-collapse:collapse; font-size:13px; }
-  td, th { border-bottom:1px solid var(--line); text-align:left; padding:6px; vertical-align:top; }
-  .pill { background:#e8f6ee; color:#067647; border-radius:99px; padding:2px 8px; font-size:11px; font-weight:700; }
-  .err { color:#b42318; font-size:13px; }
-  img.ph { width:88px; height:88px; object-fit:cover; border-radius:8px; margin:3px; }
-  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  @media (max-width:700px) { .grid { grid-template-columns:1fr; } }
+  td, th { text-align:left; padding:8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  img.ph { width:92px; height:92px; object-fit:cover; border-radius:8px; margin:4px; }
+  .pill { background:#dcfce7; color:#166534; border-radius:99px; padding:2px 8px; font-size:11px; font-weight:700; }
+  @media (max-width:800px) { .app { grid-template-columns:1fr; } .stats,.grid { grid-template-columns:1fr 1fr; } aside { display:flex; overflow:auto; } aside button { width:auto; } }
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script>
-let me = null, blocks = {};
+let me = null, blocks = {}, tab = "dash";
 async function api(url, opt={}) {
-  const res = await fetch(url, { headers: opt.body instanceof FormData ? undefined : { "Content-Type":"application/json" }, ...opt });
+  const res = await fetch(url, { credentials:"same-origin", headers: opt.body instanceof FormData ? undefined : { "Content-Type":"application/json" }, ...opt });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "त्रुटि");
+  if (!res.ok) throw new Error(data.error || "Error");
   return data;
 }
 async function boot() {
@@ -44,126 +54,164 @@ async function boot() {
 }
 function render() { document.getElementById("app").innerHTML = me ? shell() : login(); bind(); }
 function login() {
-  return `<div class="wrap"><div class="card" style="max-width:420px;margin:40px auto">
-    <h2>अजमेर कृषि सखी / CRP</h2>
-    <p>केंद्रीय डेटा · क्लस्टर सुरक्षा · फोटो · वेरिफिकेशन</p>
-    <label>यूजरनेम</label><input id="u" />
-    <label>पासवर्ड</label><input id="p" type="password" />
-    <p class="err" id="err"></p>
-    <button class="go" id="go" style="width:100%">लॉगिन</button>
-    <label>पासवर्ड भूल गए? यूजरनेम</label><input id="ru" />
-    <button class="line" id="rst">एडमिन को रीसेट अनुरोध भेजें</button>
-    <p style="font-size:12px"></p>
+  return `<div class="login-wrap"><div class="login">
+    <h2 style="color:#166534;margin-top:0">Ajmer Agriculture Information</h2>
+    <p class="muted">Cluster-wise information system</p>
+    <label>Username</label><input id="u" />
+    <label>Password</label><input id="p" type="password" />
+    <p id="err" style="color:#b91c1c"></p>
+    <button class="go" id="go" style="width:100%">Login</button>
   </div></div>`;
 }
 function shell() {
-  const admin = me.role === "admin";
-  return `<header><b>अजमेर पोर्टल</b><span>${me.name} · ${me.role} · ${me.cluster} <button id="out">Logout</button></span></header>
-  <div class="wrap"><div class="tabs">
-    <button data-t="form" class="active">नया फॉर्म</button>
-    <button data-t="excel">Excel</button>
-    <button data-t="list">रिपोर्ट</button>
-    <button data-t="gallery">फोटो</button>
-    ${admin ? `<button data-t="verify">वेरिफिकेशन</button><button data-t="users">यूजर / रीसेट</button>` : ""}
-  </div><div id="panel"></div></div>`;
+  const items = [["dash","Dashboard"],["farmers","Farmers"],["forms","Information Forms"],["photos","Photos"],["reports","Reports"],["clusters","Clusters"],["users","Users"],["excel","Excel Import / Export"],["log","Activity Log"],["settings","Settings"]];
+  return `<div class="app"><aside><h2>MENU</h2>${items.map(([id,label]) => `<button data-t="${id}" class="${tab===id?"active":""}">${label}</button>`).join("")}</aside>
+    <main><header><b>Ajmer Agriculture Information</b><span>${me.name} · ${me.role.toUpperCase()} <button id="out" class="line">Logout</button></span></header>
+    <div class="content" id="panel"></div></main></div>`;
 }
-function formPanel() {
-  const opts = Object.keys(blocks).map(b => `<option ${b===me.cluster?"selected":""}>${b}</option>`).join("");
-  return `<div class="card"><h3>परिशिष्ट 8 उपज</h3>
-    <div class="grid">
-      <div><label>ब्लॉक</label><select id="cluster" ${me.role==="admin"?"":"disabled"}>${opts}</select></div>
-      <div><label>गाँव</label><select id="village"></select></div>
-      <div><label>किसान</label><input id="farmer" /></div>
-      <div><label>फसल</label><input id="crop" /></div>
-      <div><label>किस्म</label><select id="kind"><option>अनाज</option><option>तिलहन</option><option>दलहन</option><option>अन्य</option></select></div>
-      <div><label>क्षेत्र हेक्टेयर</label><input id="area" type="number" step="0.01" /></div>
-      <div><label>उपज प्रकार</label><select id="ytype"><option>अनुमानित</option><option>वास्तविक</option></select></div>
-      <div><label>उपज क्विं.</label><input id="yield" type="number" step="0.01" /></div>
+async function show(name) {
+  tab = name;
+  document.querySelectorAll("aside button").forEach(b => b.classList.toggle("active", b.dataset.t===name));
+  const panel = document.getElementById("panel");
+  const rows = ["dash","farmers","forms","photos","reports","log"].includes(name) ? await api("/api/records") : [];
+  if (name==="dash") panel.innerHTML = dash(rows);
+  if (name==="farmers") panel.innerHTML = farmerTable(rows);
+  if (name==="forms") panel.innerHTML = formView(rows);
+  if (name==="photos") panel.innerHTML = gallery(rows);
+  if (name==="reports") panel.innerHTML = reportView(rows);
+  if (name==="clusters") panel.innerHTML = clusterView();
+  if (name==="users") panel.innerHTML = me.role==="admin" ? await userView() : `<div class="card">Only admin can manage users.</div>`;
+  if (name==="excel") panel.innerHTML = excelView();
+  if (name==="log") panel.innerHTML = logView(rows);
+  if (name==="settings") panel.innerHTML = `<div class="card"><h3>Settings</h3><p>Cluster: ${me.cluster}</p><p>Role: ${me.role}</p><p class="muted">Password change is done by admin from Users.</p></div>`;
+  wire(rows);
+}
+function dash(rows) {
+  const farmers = new Set(rows.map(r => r.payload.farmer).filter(Boolean)).size;
+  const approved = rows.filter(r => r.status==="approved").length;
+  const corr = rows.filter(r => r.status==="correction_required").length;
+  return `<h2 style="margin:0">Dashboard</h2><p class="muted">Information collection overview</p>
+    <div class="stats">
+      <div class="stat"><span class="muted">Total Farmers</span><b>${farmers}</b></div>
+      <div class="stat"><span class="muted">Total Forms</span><b>${rows.length}</b></div>
+      <div class="stat"><span class="muted">Approved</span><b>${approved}</b></div>
+      <div class="stat"><span class="muted">Correction Required</span><b>${corr}</b></div>
     </div>
-    <label>फोटो</label><input id="photo" type="file" accept="image/*" />
-    <button class="go" id="save" style="margin-top:12px">जमा करें</button></div>`;
+    <div class="grid">
+      <div class="card"><h3>Quick Actions</h3>
+        <button class="go" onclick="show('forms')">+ New Information Form</button>
+        <button class="line" onclick="show('farmers')">Farmer List</button>
+        <button class="line" onclick="show('reports')">View Forms</button>
+        <div style="margin-top:8px"><button class="line" onclick="show('photos')">View Photos</button></div>
+      </div>
+      <div class="card"><h3>System</h3><p>Current user: <b>${me.name}</b><br>Role: <b>${me.role.toUpperCase()}</b><br>Cluster: <b>${me.cluster}</b></p></div>
+    </div>
+    <div class="card"><h3>Recent Forms</h3>${rows.length? table(rows.slice(0,8)) : "<p class='muted'>No records found.</p>"}</div>`;
 }
-async function show(tab) {
-  document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("active", b.dataset.t===tab));
-  const p = document.getElementById("panel");
-  if (tab==="form") { p.innerHTML = formPanel(); fillVillages(); document.getElementById("cluster").onchange = fillVillages; document.getElementById("save").onclick = saveForm; }
-  if (tab==="excel") p.innerHTML = `<div class="card"><h3>Excel अपलोड</h3><p>डुप्लिकेट हटेगा। जरूरी कॉलम खाली हो तो एरर दिखेगा।</p><input id="xf" type="file" accept=".xlsx" /><button class="go" id="xu">जाँच कर जमा करें</button><div id="xr"></div><p><a href="/api/export">Consolidated Excel</a></p></div>`;
-  if (tab==="excel") document.getElementById("xu").onclick = uploadExcel;
-  if (tab==="list" || tab==="verify") { const rows = await api("/api/records"); p.innerHTML = list(rows, tab==="verify"); }
-  if (tab==="gallery") { const rows = await api("/api/records"); p.innerHTML = `<div class="card"><h3>फोटो गैलरी</h3>${rows.flatMap(r => r.photos.map(ph => `<div><img class="ph" src="/api/photos/${ph.id}" /><div>${r.cluster} · ${r.village} · ${r.id.slice(0,6)}</div></div>`)).join("") || "कोई फोटो नहीं"}</div>`; }
-  if (tab==="users") p.innerHTML = await userPanel();
+function table(rows) {
+  return `<table><tr><th>Date</th><th>Farmer</th><th>Cluster</th><th>Crop</th><th>Status</th></tr>
+    ${rows.map(r => `<tr><td>${(r.created_at||"").slice(0,16)}</td><td>${r.payload.farmer||"—"}</td><td>${r.cluster}</td><td>${r.payload.crop||""}</td><td><span class="pill">${r.status}</span></td></tr>`).join("")}</table>`;
+}
+function farmerTable(rows) {
+  const map = {};
+  rows.forEach(r => { const n = r.payload.farmer; if (n) map[n+"|"+r.cluster] = r; });
+  const list = Object.values(map);
+  return `<div class="card"><h3>Farmers</h3>${list.length?`<table><tr><th>Name</th><th>Cluster</th><th>Village</th><th>Crop</th></tr>${list.map(r=>`<tr><td>${r.payload.farmer}</td><td>${r.cluster}</td><td>${r.village||""}</td><td>${r.payload.crop||""}</td></tr>`).join("")}</table>`:"<p class='muted'>No records found.</p>"}</div>`;
+}
+function formView(rows) {
+  const opts = Object.keys(blocks).map(b => `<option ${b===me.cluster?"selected":""}>${b}</option>`).join("");
+  return `<div class="card"><h3>+ New Information</h3>
+    <div class="grid">
+      <div><label>Cluster</label><select id="cluster" ${me.role==="admin"?"":"disabled"}>${opts}</select></div>
+      <div><label>Village</label><select id="village"></select></div>
+      <div><label>Farmer</label><input id="farmer" /></div>
+      <div><label>Crop</label><input id="crop" /></div>
+      <div><label>Kind</label><select id="kind"><option>अनाज</option><option>तिलहन</option><option>दलहन</option><option>अन्य</option></select></div>
+      <div><label>Area (ha)</label><input id="area" type="number" step="0.01" /></div>
+      <div><label>Yield type</label><select id="ytype"><option>अनुमानित</option><option>वास्तविक</option></select></div>
+      <div><label>Yield (q)</label><input id="yield" type="number" step="0.01" /></div>
+    </div>
+    <label>Photo</label><input id="photo" type="file" accept="image/*" />
+    <button class="go" id="save" style="margin-top:12px">Submit</button>
+  </div><div class="card"><h3>Information Forms</h3>${rows.length?table(rows):"<p class='muted'>No records found.</p>"}</div>`;
+}
+function gallery(rows) {
+  const pics = rows.flatMap(r => r.photos.map(p => `<div><img class="ph" src="/api/photos/${p.id}" /><div class="muted">${r.cluster} · ${r.payload.farmer||""}</div></div>`));
+  return `<div class="card"><h3>Photos</h3><div style="display:flex;flex-wrap:wrap">${pics.join("")||"<p class='muted'>No records found.</p>"}</div></div>`;
+}
+function reportView(rows) {
+  return `<div class="card"><h3>Reports</h3><p><a href="/api/export">Download consolidated Excel</a></p>${rows.map(r => `<div style="border-bottom:1px solid #eee;padding:8px 0"><b>${r.payload.farmer||r.form_type}</b> · ${r.cluster} · ${r.village||""} <span class="pill">${r.status}</span>
+    <div class="muted">${(r.history||[]).map(h=>h.status+" · "+h.at.slice(0,16)+" · "+(h.note||"")).join("<br>")}</div>
+    ${r.photos.map(p=>`<img class="ph" src="/api/photos/${p.id}"/>`).join("")}
+    ${me.role==="admin"?`<select id="st-${r.id}"><option value="">Status</option><option>correction_required</option><option>approved</option><option>resubmitted</option></select><button class="line" data-st="${r.id}">Save</button>`:""}
+  </div>`).join("")||"<p class='muted'>No records found.</p>"}</div>`;
+}
+function clusterView() {
+  return `<div class="card"><h3>Clusters</h3>${Object.entries(blocks).map(([b,vs])=>`<p><b>${b}</b><br><span class="muted">${vs.join(", ")}</span></p>`).join("")}</div>`;
+}
+function excelView() {
+  return `<div class="card"><h3>Excel Import / Export</h3><input id="xf" type="file" accept=".xlsx" /><button class="go" id="xu">Upload and check</button><div id="xr"></div><p><a href="/api/export">Cluster / consolidated export</a></p></div>`;
+}
+function logView(rows) {
+  const logs = rows.flatMap(r => (r.history||[]).map(h => ({...h, farmer:r.payload.farmer, cluster:r.cluster})));
+  return `<div class="card"><h3>Activity Log</h3>${logs.length?`<table><tr><th>Time</th><th>Status</th><th>By</th><th>Cluster</th><th>Note</th></tr>${logs.map(h=>`<tr><td>${h.at.slice(0,16)}</td><td>${h.status}</td><td>${h.by_name}</td><td>${h.cluster}</td><td>${h.note||""}</td></tr>`).join("")}</table>`:"<p class='muted'>No records found.</p>"}</div>`;
+}
+async function userView() {
+  const users = await api("/api/users");
+  return `<div class="card"><h3>New user</h3><div class="grid">
+    <div><label>Name</label><input id="nn" /></div><div><label>Role</label><select id="nr"><option value="krishi_sakhi">Krishi Sakhi</option><option value="crp">CRP</option></select></div>
+    <div><label>Cluster</label><select id="nc">${Object.keys(blocks).map(b=>`<option>${b}</option>`).join("")}</select></div>
+    <div><label>Username</label><input id="nu" /></div><div><label>Password</label><input id="np" /></div></div>
+    <button class="go" id="nuadd">Add user</button></div>
+    <div class="card"><h3>Users</h3>${users.filter(u=>u.active!==0).map(u=>`<div style="margin:6px 0">${u.name} · ${u.role} · ${u.cluster} · ${u.username} ${u.id===me.id?"":`<button class="bad" data-del="${u.id}">Delete</button>`}</div>`).join("")}</div>
+    <div class="card"><h3>Reset password</h3><label>Username</label><input id="ru2" /><label>New password</label><input id="rp2" /><button class="go" id="doreset">Reset</button></div>`;
 }
 function fillVillages() {
-  const b = document.getElementById("cluster").value;
-  document.getElementById("village").innerHTML = (blocks[b]||[]).map(v => `<option>${v}</option>`).join("");
+  const b = document.getElementById("cluster");
+  if (!b) return;
+  document.getElementById("village").innerHTML = (blocks[b.value]||[]).map(v=>`<option>${v}</option>`).join("");
 }
-async function saveForm() {
-  const payload = { farmer: farmer.value, crop: crop.value, kind: kind.value, area: area.value, yieldType: ytype.value, yield: yield.value };
-  if (!payload.farmer || !payload.crop || !payload.area || payload.yield==="") return alert("किसान, फसल, क्षेत्र, उपज जरूरी है");
-  const rec = await api("/api/records", { method:"POST", body: JSON.stringify({ cluster: cluster.value, village: village.value, form_type:"परिशिष्ट 8", payload }) });
-  const file = document.getElementById("photo").files[0];
-  if (file) {
-    const fd = new FormData(); fd.append("photo", file);
-    await api("/api/records/"+rec.id+"/photo", { method:"POST", body: fd });
-  }
-  alert("जमा हो गया। स्टेटस: Submitted");
-  show("list");
-}
-async function uploadExcel() {
-  const fd = new FormData(); fd.append("file", document.getElementById("xf").files[0]);
-  const res = await api("/api/excel", { method:"POST", body: fd });
-  document.getElementById("xr").innerHTML = `<p>${res.saved} सही पंक्ति जमा।</p>` + res.errors.map(e => `<p class="err">पंक्ति ${e.row}: ${e.type} — ${e.detail}</p>`).join("");
-}
-function list(rows, verify) {
-  return `<div class="card"><h3>${verify?"वेरिफिकेशन":"रिपोर्ट"}</h3><table><tr><th>तारीख</th><th>कौन</th><th>क्लस्टर</th><th>किसान</th><th>स्टेटस</th><th></th></tr>
-  ${rows.map(r => `<tr><td>${r.created_at.slice(0,16)}</td><td>${r.by_name}<div class="pill">${r.role}</div></td><td>${r.cluster}<div>${r.village||""}</div></td><td>${(r.payload.farmer||"")}<div>${r.payload.crop||""}</div></td><td>${r.status}<div>${(r.history||[]).map(h=>h.status+" "+h.at.slice(0,16)).join("<br>")}</div></td>
-  <td>${r.photos.map(p=>`<img class="ph" src="/api/photos/${p.id}"/>`).join("")}
-  ${me.role==="admin"?`<select onchange="setStatus('${r.id}', this.value)"><option value="">स्टेटस</option><option>correction_required</option><option>approved</option><option>submitted</option></select><input id="n-${r.id}" placeholder="नोट" />`:""}
-  ${r.status==="correction_required" && r.user_id===me.id?`<button class="line" onclick="resubmit('${r.id}')">दोबारा जमा</button>`:""}
-  </td></tr>`).join("")}</table></div>`;
-}
-async function delUser(id) { if (!confirm('यह लॉगिन हटाना है?')) return; await api('/api/users/'+id, { method:'DELETE' }); show('users'); }
-async function setStatus(id, status) {
-  if (!status) return;
-  if (!confirm("स्टेटस "+status+" सेव करें?")) return;
-  await api("/api/records/"+id+"/status", { method:"POST", body: JSON.stringify({ status, note: document.getElementById("n-"+id).value }) });
-  show("verify");
-}
-async function resubmit(id) {
-  await api("/api/records/"+id+"/resubmit", { method:"POST", body: JSON.stringify({ note:"सुधार कर दोबारा जमा", payload:{ farmer:"updated" } }) });
-  show("list");
-}
-async function userPanel() {
-  const users = await api("/api/users");
-  const resets = await api("/api/resets");
-  return `<div class="card"><h3>नया लॉगिन</h3>
-    <div class="grid"><div><label>नाम</label><input id="nn" /></div><div><label>रोल</label><select id="nr"><option value="krishi_sakhi">कृषि सखी</option><option value="crp">CRP</option><option value="admin">Admin</option></select></div>
-    <div><label>क्लस्टर</label><select id="nc">${Object.keys(blocks).map(b=>`<option>${b}</option>`).join("")}</select></div>
-    <div><label>यूजरनेम</label><input id="nu" /></div><div><label>पासवर्ड</label><input id="np" /></div></div>
-    <button class="go" id="nuadd">जोड़ें</button></div>
-    <div class="card"><h3>यूजर</h3>${users.filter(u=>u.active!==0).map(u=>`<div>${u.name} · ${u.role} · ${u.cluster} · ${u.username} ${u.id===me.id?"":`<button class="bad" onclick="delUser('${u.id}')">हटाएँ</button>`}</div>`).join("")}</div>
-    <div class="card"><h3>पासवर्ड रीसेट</h3>${resets.map(r=>`<div>${r.username} · ${r.status}</div>`).join("") || "कोई अनुरोध नहीं"}
-    <label>यूजरनेम</label><input id="ru2" /><label>नया पासवर्ड</label><input id="rp2" /><button class="go" id="doreset">रीसेट करें</button></div>`;
+function wire() {
+  fillVillages();
+  const c = document.getElementById("cluster");
+  if (c) c.onchange = fillVillages;
+  const save = document.getElementById("save");
+  if (save) save.onclick = async () => {
+    const payload = { farmer:farmer.value, crop:crop.value, kind:kind.value, area:area.value, yieldType:ytype.value, yield:yield.value };
+    if (!payload.farmer || !payload.crop) return alert("Farmer and crop are required");
+    const rec = await api("/api/records", { method:"POST", body: JSON.stringify({ cluster: cluster.value, village: village.value, form_type:"Information Form", payload }) });
+    const file = document.getElementById("photo").files[0];
+    if (file) { const fd = new FormData(); fd.append("photo", file); await api("/api/records/"+rec.id+"/photo", { method:"POST", body: fd }); }
+    alert("Submitted"); show("reports");
+  };
+  const xu = document.getElementById("xu");
+  if (xu) xu.onclick = async () => {
+    const fd = new FormData(); fd.append("file", document.getElementById("xf").files[0]);
+    const res = await api("/api/excel", { method:"POST", body: fd });
+    document.getElementById("xr").innerHTML = `<p>${res.saved} rows saved.</p>` + res.errors.map(e=>`<p style="color:#b91c1c">Row ${e.row}: ${e.detail}</p>`).join("");
+  };
+  document.querySelectorAll("[data-st]").forEach(b => b.onclick = async () => {
+    const status = document.getElementById("st-"+b.dataset.st).value;
+    if (!status) return;
+    await api("/api/records/"+b.dataset.st+"/status", { method:"POST", body: JSON.stringify({ status, note:"" }) });
+    show("reports");
+  });
+  document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
+    if (!confirm("Delete this login?")) return;
+    await api("/api/users/"+b.dataset.del, { method:"DELETE" });
+    show("users");
+  });
+  const add = document.getElementById("nuadd");
+  if (add) add.onclick = async () => { await api("/api/users", { method:"POST", body: JSON.stringify({ name:nn.value, role:nr.value, cluster:nc.value, username:nu.value, password:np.value }) }); alert("User added"); show("users"); };
+  const dr = document.getElementById("doreset");
+  if (dr) dr.onclick = async () => { await api("/api/admin/reset", { method:"POST", body: JSON.stringify({ username:ru2.value, password:rp2.value }) }); alert("Password updated"); };
 }
 function bind() {
   const go = document.getElementById("go");
-  if (go) {
-    go.onclick = async () => {
-      try { await api("/api/login", { method:"POST", body: JSON.stringify({ username:u.value, password:p.value }) }); boot(); }
-      catch (e) { err.textContent = e.message; }
-    };
-    document.getElementById("rst").onclick = async () => { await api("/api/reset-request", { method:"POST", body: JSON.stringify({ username:ru.value }) }); alert("अनुरोध भेज दिया"); };
-    return;
-  }
+  if (go) { go.onclick = async () => { try { await api("/api/login", { method:"POST", body: JSON.stringify({ username:u.value, password:p.value }) }); boot(); } catch(e){ err.textContent = e.message; } }; return; }
   document.getElementById("out").onclick = async () => { await api("/api/logout", { method:"POST" }); me=null; render(); };
-  document.querySelectorAll(".tabs button").forEach(b => b.onclick = () => show(b.dataset.t));
-  show("form");
-  setTimeout(() => {
-    const add = document.getElementById("nuadd");
-    if (add) add.onclick = async () => { await api("/api/users", { method:"POST", body: JSON.stringify({ name:nn.value, role:nr.value, cluster:nc.value, username:nu.value, password:np.value }) }); alert("लॉगिन बन गया"); show("users"); };
-    const dr = document.getElementById("doreset");
-    if (dr) dr.onclick = async () => { await api("/api/admin/reset", { method:"POST", body: JSON.stringify({ username:ru2.value, password:rp2.value }) }); alert("पासवर्ड बदल गया"); };
-  }, 300);
+  document.querySelectorAll("aside button").forEach(b => b.onclick = () => show(b.dataset.t));
+  show(tab);
 }
 boot();
 </script>
