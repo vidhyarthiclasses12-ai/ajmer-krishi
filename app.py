@@ -1,4 +1,6 @@
 import json, os, random, sqlite3, uuid
+import urllib.parse
+import urllib.request
 from datetime import datetime, timedelta
 from functools import wraps
 from io import BytesIO
@@ -111,6 +113,44 @@ def admin_required(fn):
         return fn(*a, **k)
     return wrap
 
+def send_sms(mobile, code):
+    key = os.environ.get("FAST2SMS_API_KEY", "").strip()
+    if not key:
+        return False
+    phone = "".join(ch for ch in mobile if ch.isdigit())[-10:]
+    body = urllib.parse.urlencode({
+        "authorization": key,
+        "route": "otp",
+        "variables_values": code,
+        "numbers": phone,
+        "flash": "0",
+    }).encode()
+    req = urllib.request.Request("https://www.fast2sms.com/dev/bulkV2", data=body, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as res:
+            return res.status == 200
+    except Exception:
+        return False
+
+def send_text(mobile, text):
+    key = os.environ.get("FAST2SMS_API_KEY", "").strip()
+    if not key:
+        return False
+    phone = "".join(ch for ch in mobile if ch.isdigit())[-10:]
+    body = urllib.parse.urlencode({
+        "authorization": key,
+        "route": "q",
+        "message": text,
+        "numbers": phone,
+        "flash": "0",
+    }).encode()
+    req = urllib.request.Request("https://www.fast2sms.com/dev/bulkV2", data=body, method="POST")
+    try:
+        with urllib.request.urlopen(req, timeout=20) as res:
+            return res.status == 200
+    except Exception:
+        return False
+
 def add_history(con, rid, status, note, by):
     con.execute(
         "INSERT INTO history VALUES (?,?,?,?,?,?)",
@@ -217,7 +257,10 @@ def otp_send():
     con.execute("INSERT INTO otps VALUES (?,?,?,?,?,0)", (uuid.uuid4().hex, username, mobile, code, exp))
     con.commit()
     con.close()
-    return jsonify({"ok": True, "message": "OTP बन गया। 10 मिनट तक मान्य है।"})
+    sent = send_sms(mobile, code)
+    if sent:
+        return jsonify({"ok": True, "message": "OTP मोबाइल पर भेज दिया। 10 मिनट तक मान्य है।"})
+    return jsonify({"ok": True, "message": "OTP बन गया, SMS कुंजी अभी सेट नहीं है। एडमिन Users में OTP देख सकता है।"})
 
 @app.post("/api/otp/reset")
 def otp_reset():
@@ -299,7 +342,10 @@ def add_user():
         con.close()
         return jsonify({"error": "यूजरनेम पहले से है"}), 400
     con.close()
-    return jsonify({"ok": True})
+    link = os.environ.get("SITE_URL", "https://ajmer-krishi.onrender.com")
+    text = f"Ajmer Agriculture Information\nLink: {link}\nUsername: {data['username'].strip()}\nPassword: {data['password']}\nCluster: {data.get('cluster') or 'All'}"
+    sent = send_text(mobile, text)
+    return jsonify({"ok": True, "sms": sent})
 
 @app.get("/api/users")
 @admin_required
