@@ -205,6 +205,18 @@ def users():
     con.close()
     return jsonify(rows)
 
+@app.delete("/api/users/<uid>")
+@admin_required
+def delete_user(uid):
+    me = current()
+    if uid == me["id"]:
+        return jsonify({"error": "अपना लॉगिन नहीं मिटा सकते"}), 400
+    con = db()
+    con.execute("UPDATE users SET active=0 WHERE id=?", (uid,))
+    con.commit()
+    con.close()
+    return jsonify({"ok": True})
+
 def visible_sql(u):
     if u["role"] == "admin":
         return "", []
