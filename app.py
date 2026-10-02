@@ -21,6 +21,17 @@ app.secret_key = os.environ.get("SECRET_KEY", "change-this-ajmer-krishi-secret")
 app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024
 
 BLOCKS = {
+    "अजमेर ग्रामीण": ["गेगल", "घूघरा", "दौराई", "पुष्कर", "लोहागल", "हटूंडी", "सेदरिया"],
+    "बड़ल्या": ["बड़ल्या", "सराधना", "नारेली", "मगरा", "खोड़ा", "आंबा मसीना"],
+    "पीसांगन": ["पीसांगन", "गोला", "केसरपुरा", "बुधवाड़ा", "जेठाना", "गणहेड़ा"],
+    "किशनगढ़ (सिलोरा)": ["सिलोरा", "रूपनगढ़", "हरमाड़ा", "बांदरसिंदरी", "पाटन", "मोतीपुरा"],
+    "नसीराबाद": ["नसीराबाद", "तबाजी", "माकरवाली", "रामसर", "सरसुंडा"],
+    "श्रीनगर": ["श्रीनगर", "रामगढ़", "खारवा", "देलवाड़ा"],
+    "अराई": ["अराई", "बगहेरा", "जूनिया", "घाटियाली", "देवगांव"],
+    "भिनाय": ["भिनाय", "बांदनवाड़ा", "बारली", "देवलिया कलां", "हीरापुरा"],
+    "केकड़ी": ["केकड़ी", "जूनिया", "घाटियाली", "धूंधरी", "गुल्गांव"],
+    "सरवाड़": ["सरवाड़", "टांटुटी", "रामगढ़", "सांकलिया"],
+    "सावर": ["सावर", "रामगढ़", "खारवा", "टीटड़िया"],
 }
 
 def db():
@@ -61,7 +72,7 @@ def init():
     if not con.execute("SELECT 1 FROM users WHERE username='admin'").fetchone():
         con.execute(
             "INSERT INTO users VALUES (?,?,?,?,?,?,?,1)",
-            ("u-admin", "admin", "जिला एडमिन", "All", "9000000000", "admin",
+            ("u-admin", "admin", "System Admin", "All", "9000000000", "admin",
              generate_password_hash("Ajmer@2026")),
         )
     con.execute("UPDATE users SET active=0 WHERE username IN ('clusterA','crpA')")
@@ -97,8 +108,8 @@ def admin_required(fn):
     @wraps(fn)
     def wrap(*a, **k):
         u = current()
-        if not u or u["role"] != "admin":
-            return jsonify({"error": "सिर्फ एडमिन"}), 403
+        if not u or not can_see_all(u):
+            return jsonify({"error": "सिर्फ System Admin"}), 403
         return fn(*a, **k)
     return wrap
 
@@ -140,6 +151,16 @@ def send_text(mobile, text):
     except Exception:
         return False
 
+
+def manager_required(fn):
+    @wraps(fn)
+    def wrap(*a, **k):
+        u = current()
+        if not u or u["role"] not in ("admin", "district_admin"):
+            return jsonify({"error": "System Admin या District Admin"}), 403
+        return fn(*a, **k)
+    return wrap
+
 def add_history(con, rid, status, note, by):
     con.execute(
         "INSERT INTO history VALUES (?,?,?,?,?,?)",
@@ -159,7 +180,7 @@ def login():
     if not user or not check_password_hash(user["password_hash"], data.get("password", "")):
         return jsonify({"error": "गलत यूजरनेम या पासवर्ड"}), 401
     session["uid"] = user["id"]
-    return jsonify({"id": user["id"], "name": user["name"], "role": user["role"], "cluster": user["cluster"]})
+    return jsonify({"id": user["id"], "name": user["name"], "role": user["role"], "cluster": user["cluster"], "username": user["username"], "mobile": user["mobile"]})
 
 @app.post("/api/logout")
 def logout():
@@ -171,7 +192,25 @@ def me():
     u = current()
     if not u:
         return jsonify(None)
-    return jsonify({"id": u["id"], "name": u["name"], "role": u["role"], "cluster": u["cluster"]})
+    return jsonify({"id": u["id"], "name": u["name"], "role": u["role"], "cluster": u["cluster"], "username": u["username"], "mobile": u["mobile"]})
+
+TEHSILS = {
+  "अजमेर": ["अजयसर","अराड़का","बाबायाचा","बालवंता","बड़गांव","बीर","भंवता","भूडोल","बुबानी","चचियावास","दौराई","डूमड़ा","गगवाना","गेगल","घूघरा","हटूंडी","लोहागल","मियापुर","नारेली","पालरा","पुष्कर","सेदरिया"],
+  "पीसांगन": ["पीसांगन","गोला","केसरपुरा","बुधवाड़ा","जेठाना","गणहेड़ा","बानसेली","देव नगर"],
+  "पुष्कर": ["पुष्कर","गणहेड़ा","बानसेली","तिलोड़ा","लेस्वा"],
+  "किशनगढ़": ["किशनगढ़","सिलोरा","रूपनगढ़","हरमाड़ा","बांदरसिंदरी","पाटन","मोतीपुरा","रलावता"],
+  "नसीराबाद": ["नसीराबाद","तबाजी","माकरवाली","रामसर","सरसुंडा","कादेल"],
+  "श्रीनगर": ["श्रीनगर","रामगढ़","खारवा","देलवाड़ा"],
+  "अराई": ["अराई","बगहेरा","जूनिया","घाटियाली","देवगांव"],
+  "केकड़ी": ["केकड़ी","जूनिया","घाटियाली","धूंधरी","गुल्गांव","बिसुंदनी"],
+  "भिनाय": ["भिनाय","बांदनवाड़ा","बारली","देवलिया कलां","हीरापुरा","चापानेरी"],
+  "सरवाड़": ["सरवाड़","टांटुटी","रामगढ़","सांकलिया"],
+  "सावर": ["सावर","रामगढ़","खारवा","टीटड़िया"]
+}
+
+@app.get("/api/directory")
+def directory():
+    return jsonify({"district": "अजमेर", "tehsils": TEHSILS, "source": "Ajmer tehsil-village list aligned with Apna Khata revenue tehsils"})
 
 @app.get("/api/meta")
 def meta():
@@ -184,7 +223,7 @@ def meta():
     return jsonify(out)
 
 @app.post("/api/clusters")
-@admin_required
+@manager_required
 def add_cluster():
     data = request.json or {}
     name = (data.get("name") or "").strip()
@@ -211,7 +250,7 @@ def del_cluster(cid):
     return jsonify({"ok": True})
 
 @app.post("/api/places")
-@admin_required
+@manager_required
 def add_place():
     data = request.json or {}
     if not data.get("cluster_id") or not data.get("village"):
@@ -295,7 +334,7 @@ def resets():
     return jsonify(rows)
 
 @app.post("/api/admin/reset")
-@admin_required
+@manager_required
 def admin_reset():
     data = request.json or {}
     password = data.get("password", "")
@@ -309,10 +348,10 @@ def admin_reset():
     return jsonify({"ok": True})
 
 @app.post("/api/users")
-@admin_required
+@manager_required
 def add_user():
     data = request.json or {}
-    if data.get("role") not in ("admin", "krishi_sakhi", "crp"):
+    if data.get("role") not in ("admin", "district_admin", "krishi_sakhi", "crp"):
         return jsonify({"error": "रोल गलत है"}), 400
     if len(data.get("password", "")) < 8:
         return jsonify({"error": "पासवर्ड कम से कम 8 अक्षर"}), 400
@@ -337,7 +376,7 @@ def add_user():
     return jsonify({"ok": True, "sms": sent})
 
 @app.get("/api/users")
-@admin_required
+@manager_required
 def users():
     con = db()
     rows = [dict(r) for r in con.execute("SELECT id, role, name, cluster, mobile, username, active FROM users").fetchall()]
@@ -356,8 +395,11 @@ def delete_user(uid):
     con.close()
     return jsonify({"ok": True})
 
+def can_see_all(u):
+    return u["role"] in ("admin", "district_admin")
+
 def visible_sql(u):
-    if u["role"] == "admin":
+    if can_see_all(u):
         return "", []
     return " WHERE cluster=?", [u["cluster"]]
 
@@ -384,8 +426,8 @@ def records():
 def create_record():
     u = current()
     data = request.json or {}
-    cluster = u["cluster"] if u["role"] != "admin" else (data.get("cluster") or u["cluster"])
-    if u["role"] != "admin" and data.get("cluster") and data.get("cluster") != u["cluster"]:
+    cluster = u["cluster"] if not can_see_all(u) else (data.get("cluster") or u["cluster"])
+    if not can_see_all(u) and data.get("cluster") and data.get("cluster") != u["cluster"]:
         return jsonify({"error": "आप केवल अपने क्लस्टर का डेटा भर सकते हैं"}), 403
     rid = uuid.uuid4().hex
     now = datetime.now().isoformat(timespec="seconds")
@@ -406,7 +448,7 @@ def upload_photo(rid):
     u = current()
     con = db()
     rec = con.execute("SELECT * FROM records WHERE id=?", (rid,)).fetchone()
-    if not rec or (u["role"] != "admin" and rec["cluster"] != u["cluster"]):
+    if not rec or (not can_see_all(u) and rec["cluster"] != u["cluster"]):
         con.close()
         return jsonify({"error": "रिपोर्ट नहीं मिली"}), 404
     f = request.files.get("photo")
@@ -432,7 +474,7 @@ def photo(pid):
         (pid,),
     ).fetchone()
     con.close()
-    if not row or (u["role"] != "admin" and row["cluster"] != u["cluster"]):
+    if not row or (not can_see_all(u) and row["cluster"] != u["cluster"]):
         return jsonify({"error": "नहीं"}), 404
     return send_from_directory(UPLOAD, row["filename"])
 
