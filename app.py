@@ -194,9 +194,35 @@ def me():
 
 TEHSILS = ["अजमेर","पीसांगन","पुष्कर","किशनगढ़","नसीराबाद","श्रीनगर","अराई","केकड़ी","भिनाय","सरवाड़","सावर"]
 
+def lgd_tree():
+    path = os.path.join(BASE, "ajmer_lgd.json")
+    tree = json.loads(open(path, encoding="utf-8").read()) if os.path.exists(path) else {}
+    con = db()
+    con.execute("CREATE TABLE IF NOT EXISTS extra_villages (id TEXT PRIMARY KEY, tehsil TEXT, gp TEXT, village TEXT)")
+    for row in con.execute("SELECT tehsil, gp, village FROM extra_villages"):
+        tree.setdefault(row["tehsil"], {}).setdefault(row["gp"] or "Unassigned", [])
+        if row["village"] not in tree[row["tehsil"]][row["gp"] or "Unassigned"]:
+            tree[row["tehsil"]][row["gp"] or "Unassigned"].append(row["village"])
+    con.close()
+    return tree
+
 @app.get("/api/directory")
 def directory():
-    return jsonify({"district": "अजमेर", "tehsils": TEHSILS})
+    return jsonify({"district": "अजमेर", "tree": lgd_tree()})
+
+@app.post("/api/directory/village")
+@admin_required
+def map_village():
+    data = request.json or {}
+    tehsil, gp, village = (data.get("tehsil") or "").strip(), (data.get("gp") or "").strip(), (data.get("village") or "").strip()
+    if not tehsil or not village:
+        return jsonify({"error": "तहसील और गाँव जरूरी"}), 400
+    con = db()
+    con.execute("CREATE TABLE IF NOT EXISTS extra_villages (id TEXT PRIMARY KEY, tehsil TEXT, gp TEXT, village TEXT)")
+    con.execute("INSERT INTO extra_villages VALUES (?,?,?,?)", (uuid.uuid4().hex, tehsil, gp or "Unassigned", village))
+    con.commit()
+    con.close()
+    return jsonify({"ok": True})
 
 @app.get("/api/meta")
 def meta():
