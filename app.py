@@ -1,5 +1,5 @@
-import json, os, sqlite3, uuid
-from datetime import datetime
+import json, os, random, sqlite3, uuid
+from datetime import datetime, timedelta
 from functools import wraps
 from io import BytesIO
 
@@ -57,6 +57,15 @@ def init():
     CREATE TABLE IF NOT EXISTS resets (
       id TEXT PRIMARY KEY, username TEXT, status TEXT, created_at TEXT
     );
+    CREATE TABLE IF NOT EXISTS clusters (
+      id TEXT PRIMARY KEY, district TEXT, block TEXT, name TEXT UNIQUE
+    );
+    CREATE TABLE IF NOT EXISTS places (
+      id TEXT PRIMARY KEY, cluster_id TEXT, village TEXT, gram_panchayat TEXT
+    );
+    CREATE TABLE IF NOT EXISTS otps (
+      id TEXT PRIMARY KEY, username TEXT, mobile TEXT, code TEXT, expires TEXT, used INTEGER DEFAULT 0
+    );
     """)
     if not con.execute("SELECT 1 FROM users WHERE username='admin'").fetchone():
         con.execute(
@@ -64,16 +73,13 @@ def init():
             ("u-admin", "admin", "जिला एडमिन", "All", "9000000000", "admin",
              generate_password_hash("Ajmer@2026")),
         )
-        con.execute(
-            "INSERT INTO users VALUES (?,?,?,?,?,?,?,1)",
-            ("u-a", "krishi_sakhi", "सुनीता देवी", "अजमेर ग्रामीण", "9876500001", "clusterA",
-             generate_password_hash("Sakhi@123")),
-        )
-        con.execute(
-            "INSERT INTO users VALUES (?,?,?,?,?,?,?,1)",
-            ("u-c", "crp", "रानी कुमारी", "अजमेर ग्रामीण", "9876500002", "crpA",
-             generate_password_hash("Crp@123")),
-        )
+    con.execute("UPDATE users SET active=0 WHERE username IN ('clusterA','crpA')")
+    if not con.execute("SELECT 1 FROM clusters").fetchone():
+        for block, villages in BLOCKS.items():
+            cid = uuid.uuid4().hex
+            con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (cid, "अजमेर", block, block))
+            for v in villages:
+                con.execute("INSERT INTO places VALUES (?,?,?,?)", (uuid.uuid4().hex, cid, v, v))
     con.commit()
     con.close()
 
@@ -140,7 +146,102 @@ def me():
 
 @app.get("/api/meta")
 def meta():
-    return jsonify(BLOCKS)
+    con = db()
+    out = {}
+    for c in con.execute("SELECT * FROM clusters ORDER BY name").fetchall():
+        places = [dict(p) for p in con.execute("SELECT id, village, gram_panchayat FROM places WHERE cluster_id=?", (c["id"],)).fetchall()]
+        out[c["name"]] = {"id": c["id"], "district": c["district"], "block": c["block"], "places": places}
+    con.close()
+    return jsonify(out)
+
+@app.post("/api/clusters")
+@admin_required
+def add_cluster():
+    data = request.json or {}
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "क्लस्टर नाम लिखें"}), 400
+    con = db()
+    try:
+        con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (uuid.uuid4().hex, data.get("district") or "अजमेर", data.get("block") or name, name))
+        con.commit()
+    except sqlite3.IntegrityError:
+        con.close()
+        return jsonify({"error": "यह क्लस्टर पहले से है"}), 400
+    con.close()
+    return jsonify({"ok": True})
+
+@app.delete("/api/clusters/<cid>")
+@admin_required
+def del_cluster(cid):
+    con = db()
+    con.execute("DELETE FROM places WHERE cluster_id=?", (cid,))
+    con.execute("DELETE FROM clusters WHERE id=?", (cid,))
+    con.commit()
+    con.close()
+    return jsonify({"ok": True})
+
+@app.post("/api/places")
+@admin_required
+def add_place():
+    data = request.json or {}
+    if not data.get("cluster_id") or not data.get("village"):
+        return jsonify({"error": "क्लस्टर और गाँव जरूरी"}), 400
+    con = db()
+    con.execute("INSERT INTO places VALUES (?,?,?,?)", (uuid.uuid4().hex, data["cluster_id"], data["village"].strip(), (data.get("gram_panchayat") or data["village"]).strip()))
+    con.commit()
+    con.close()
+    return jsonify({"ok": True})
+
+@app.delete("/api/places/<pid>")
+@admin_required
+def del_place(pid):
+    con = db()
+    con.execute("DELETE FROM places WHERE id=?", (pid,))
+    con.commit()
+    con.close()
+    return jsonify({"ok": True})
+
+@app.post("/api/otp/send")
+def otp_send():
+    data = request.json or {}
+    username = (data.get("username") or "").strip()
+    mobile = (data.get("mobile") or "").strip()
+    con = db()
+    user = con.execute("SELECT * FROM users WHERE username=? AND active=1", (username,)).fetchone()
+    if not user or (user["mobile"] or "")[-10:] != mobile[-10:]:
+        con.close()
+        return jsonify({"error": "यूजरनेम और मोबाइल मेल नहीं खाते"}), 400
+    code = f"{random.randint(100000, 999999)}"
+    exp = (datetime.now() + timedelta(minutes=10)).isoformat(timespec="seconds")
+    con.execute("INSERT INTO otps VALUES (?,?,?,?,?,0)", (uuid.uuid4().hex, username, mobile, code, exp))
+    con.commit()
+    con.close()
+    return jsonify({"ok": True, "message": "OTP बन गया। 10 मिनट तक मान्य है।"})
+
+@app.post("/api/otp/reset")
+def otp_reset():
+    data = request.json or {}
+    if len(data.get("password") or "") < 8:
+        return jsonify({"error": "नया पासवर्ड कम से कम 8 अक्षर"}), 400
+    con = db()
+    row = con.execute("SELECT * FROM otps WHERE username=? AND code=? AND used=0 ORDER BY expires DESC", (data.get("username"), data.get("otp"))).fetchone()
+    if not row or row["expires"] < datetime.now().isoformat(timespec="seconds"):
+        con.close()
+        return jsonify({"error": "OTP गलत या खत्म हो गया"}), 400
+    con.execute("UPDATE users SET password_hash=? WHERE username=?", (generate_password_hash(data["password"]), data.get("username")))
+    con.execute("UPDATE otps SET used=1 WHERE id=?", (row["id"],))
+    con.commit()
+    con.close()
+    return jsonify({"ok": True})
+
+@app.get("/api/otps")
+@admin_required
+def list_otps():
+    con = db()
+    rows = [dict(r) for r in con.execute("SELECT username, mobile, code, expires, used FROM otps ORDER BY expires DESC LIMIT 20").fetchall()]
+    con.close()
+    return jsonify(rows)
 
 @app.post("/api/reset-request")
 def reset_request():
@@ -183,12 +284,15 @@ def add_user():
         return jsonify({"error": "रोल गलत है"}), 400
     if len(data.get("password", "")) < 8:
         return jsonify({"error": "पासवर्ड कम से कम 8 अक्षर"}), 400
+    mobile = (data.get("mobile") or "").strip()
+    if len(mobile) < 10:
+        return jsonify({"error": "मोबाइल नंबर जरूरी है"}), 400
     con = db()
     try:
         con.execute(
             "INSERT INTO users VALUES (?,?,?,?,?,?,?,1)",
             (uuid.uuid4().hex, data["role"], data.get("name"), data.get("cluster") or "All",
-             data.get("mobile", ""), data["username"].strip(), generate_password_hash(data["password"])),
+             mobile, data["username"].strip(), generate_password_hash(data["password"])),
         )
         con.commit()
     except sqlite3.IntegrityError:
