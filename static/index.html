@@ -88,15 +88,15 @@ async function show(name) {
 }
 function postOf(role) {
   if (role==="admin") return "System Admin";
-  if (role==="district_admin") return "Agriculture Research Officer";
+  if (role==="district_admin") return "District Admin";
   if (role==="crp") return "CRP";
   return "Krishi Sakhi";
 }
 function profileView() {
   return `<div class="card"><h3>User Profile</h3>
     <p>Name: <b>${me.name}</b></p>
-    <p>Post: <b>${postOf(me.role)}</b></p>
-    <p>Role: <b>${me.role}</b></p>
+    <p>Role: <b>${me.role==="district_admin"?"District Admin":me.role==="admin"?"System Admin":me.role}</b></p>
+    <p>Post: <b>${me.role==="district_admin"?"Agriculture Research Officer":me.role==="admin"?"System Admin":postOf(me.role)}</b></p>
     <p>Cluster: <b>${me.cluster}</b></p>
     <p>Username: <b>${me.username||"—"}</b></p><p>Mobile: <b>${me.mobile||"—"}</b></p>
     <p class="muted">${me.role==="admin"?"System Admin changes, users aur clusters manage karta hai.":"District Admin sabhi clusters ka data dekh sakta hai."}</p>
@@ -164,12 +164,11 @@ function reportView(rows) {
 }
 function clusterView() {
   if (me.role!=="admin" && me.role!=="district_admin") return `<div class="card"><h3>Clusters</h3>${Object.keys(blocks).join(", ")}</div>`;
-  const tehsilOpts = Object.keys(window.TEHSILS||{}).map(t=>`<option>${t}</option>`).join("");
+  const tehsilOpts = (window.TEHSILS||[]).map(t=>`<option>${t}</option>`).join("");
   return `<div class="card"><h3>Add cluster</h3>
     <div class="grid"><div><label>District</label><input id="cdist" value="अजमेर" readonly /></div>
     <div><label>Tehsil</label><select id="cteh">${tehsilOpts}</select></div>
-    <div><label>Village</label><select id="cvill"></select></div>
-    <div><label>Cluster name</label><input id="cname" /></div></div>
+    <div><label>Cluster name</label><input id="cname" placeholder="नया क्लस्टर नाम" /></div></div>
     <button class="go" id="addc">Add cluster</button></div>
     <div class="card"><h3>Add village / gram panchayat</h3>
     <label>Cluster</label><select id="pc">${Object.entries(blocks).map(([n,c])=>`<option value="${c.id}">${n}</option>`).join("")}</select>
@@ -191,7 +190,7 @@ async function userView() {
   const users = await api("/api/users");
   const otps = await api("/api/otps");
   return `<div class="card"><h3>New user</h3><div class="grid">
-    <div><label>Name</label><input id="nn" /></div><div><label>Role</label><select id="nr"><option value="district_admin">District Admin · Agriculture Research Officer</option><option value="krishi_sakhi">Krishi Sakhi</option><option value="crp">CRP</option></select></div>
+    <div><label>Name</label><input id="nn" /></div><div><label>Role</label><select id="nr"><option value="district_admin">District Admin</option><option value="krishi_sakhi">Krishi Sakhi</option><option value="crp">CRP</option></select></div>
     <div><label>Cluster</label><select id="nc">${Object.keys(blocks).map(b=>`<option>${b}</option>`).join("")}</select></div>
     <div><label>Mobile</label><input id="nm" /></div>
     <div><label>Username</label><input id="nu" /></div><div><label>Password</label><input id="np" /></div></div>
@@ -245,13 +244,8 @@ function wire() {
     show("users");
   };
   const addc = document.getElementById("addc");
-  const fillTeh = () => { const sel=document.getElementById("cteh"); const v=document.getElementById("cvill"); if(!sel||!v) return; v.innerHTML=(window.TEHSILS[sel.value]||[]).map(x=>`<option>${x}</option>`).join(""); };
-  if (document.getElementById("cteh")) { fillTeh(); document.getElementById("cteh").onchange=fillTeh; }
   if (addc) addc.onclick = async () => {
-    const created = await api("/api/clusters", { method:"POST", body: JSON.stringify({ district:cdist.value, block:cteh.value, name:cname.value }) });
-    const meta = await api("/api/meta");
-    const cid = meta[cname.value] && meta[cname.value].id;
-    if (cid) await api("/api/places", { method:"POST", body: JSON.stringify({ cluster_id:cid, village:cvill.value, gram_panchayat:cvill.value }) });
+    await api("/api/clusters", { method:"POST", body: JSON.stringify({ district:cdist.value, block:cteh.value, name:cname.value }) });
     blocks = await api("/api/meta"); show("clusters");
   };
   const addp = document.getElementById("addp");
