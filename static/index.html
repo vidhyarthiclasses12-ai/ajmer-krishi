@@ -49,7 +49,7 @@ async function api(url, opt={}) {
 }
 async function boot() {
   me = await fetch("/api/me").then(r => r.json());
-  if (me) { blocks = await api("/api/meta"); window.TEHSILS = (await api("/api/directory")).tehsils; }
+  if (me) { blocks = await api("/api/meta"); window.LGD = (await api("/api/directory")).tree || {}; }
   render();
 }
 function render() { document.getElementById("app").innerHTML = me ? shell() : login(); bind(); }
@@ -164,12 +164,20 @@ function reportView(rows) {
 }
 function clusterView() {
   if (me.role!=="admin" && me.role!=="district_admin") return `<div class="card"><h3>Clusters</h3>${Object.keys(blocks).join(", ")}</div>`;
-  const tehsilOpts = (window.TEHSILS||[]).map(t=>`<option>${t}</option>`).join("");
+  const tehsilOpts = Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("");
   return `<div class="card"><h3>Add cluster</h3>
+    <p class="muted">तहसील, ग्राम पंचायत और गाँव ड्रॉपडाउन से चुनें। चुने गाँव क्लस्टर में जुड़ जाएँगे।</p>
     <div class="grid"><div><label>District</label><input id="cdist" value="अजमेर" readonly /></div>
     <div><label>Tehsil</label><select id="cteh">${tehsilOpts}</select></div>
-    <div><label>Cluster name</label><input id="cname" placeholder="नया क्लस्टर नाम" /></div></div>
+    <div><label>Gram Panchayat</label><select id="cgp"></select></div>
+    <div><label>Cluster name</label><input id="cname" placeholder="क्लस्टर नाम" /></div></div>
+    <label>Villages</label><select id="cvills" multiple size="8"></select>
     <button class="go" id="addc">Add cluster</button></div>
+    ${me.role==="admin"?`<div class="card"><h3>Map missing village</h3><p class="muted">System Admin जो गाँव जोड़ेगा वह ड्रॉपडाउन में आ जाएगा।</p>
+      <div class="grid"><div><label>Tehsil</label><select id="mteh">${tehsilOpts}</select></div>
+      <div><label>Gram Panchayat</label><select id="mgp"></select></div>
+      <div><label>New village</label><input id="mvill" /></div></div>
+      <button class="line" id="mapv">Add to dropdown</button></div>`:""}
     <div class="card"><h3>Add village / gram panchayat</h3>
     <label>Cluster</label><select id="pc">${Object.entries(blocks).map(([n,c])=>`<option value="${c.id}">${n}</option>`).join("")}</select>
     <label>Village</label><input id="pv" /><label>Gram panchayat</label><input id="pg" />
@@ -243,10 +251,40 @@ function wire() {
     if (phone.length===10 && confirm("User ban gaya. WhatsApp me message kholen?")) window.open("https://wa.me/91"+phone+"?text="+msg);
     show("users");
   };
+  const fillGp = (tehId, gpId, villId) => {
+    const teh = document.getElementById(tehId);
+    const gp = document.getElementById(gpId);
+    if (!teh || !gp) return;
+    const gps = Object.keys((window.LGD||{})[teh.value]||{});
+    gp.innerHTML = gps.map(g=>`<option>${g}</option>`).join("");
+    const vill = document.getElementById(villId);
+    if (!vill) return;
+    const list = ((window.LGD||{})[teh.value]||{})[gp.value]||[];
+    vill.innerHTML = list.map(v=>`<option>${v}</option>`).join("");
+  };
+  if (document.getElementById("cteh")) {
+    fillGp("cteh","cgp","cvills");
+    document.getElementById("cteh").onchange = () => fillGp("cteh","cgp","cvills");
+    document.getElementById("cgp").onchange = () => fillGp("cteh","cgp","cvills");
+  }
+  if (document.getElementById("mteh")) {
+    fillGp("mteh","mgp", null);
+    document.getElementById("mteh").onchange = () => fillGp("mteh","mgp", null);
+  }
   const addc = document.getElementById("addc");
   if (addc) addc.onclick = async () => {
     await api("/api/clusters", { method:"POST", body: JSON.stringify({ district:cdist.value, block:cteh.value, name:cname.value }) });
+    const meta = await api("/api/meta");
+    const cid = meta[cname.value] && meta[cname.value].id;
+    const picked = [...document.getElementById("cvills").selectedOptions].map(o=>o.value);
+    if (cid) for (const v of picked) await api("/api/places", { method:"POST", body: JSON.stringify({ cluster_id:cid, village:v, gram_panchayat:cgp.value }) });
     blocks = await api("/api/meta"); show("clusters");
+  };
+  const mapv = document.getElementById("mapv");
+  if (mapv) mapv.onclick = async () => {
+    await api("/api/directory/village", { method:"POST", body: JSON.stringify({ tehsil:mteh.value, gp:mgp.value, village:mvill.value }) });
+    window.LGD = (await api("/api/directory")).tree || {};
+    alert("Dropdown me aa gaya"); show("clusters");
   };
   const addp = document.getElementById("addp");
   if (addp) addp.onclick = async () => { await api("/api/places", { method:"POST", body: JSON.stringify({ cluster_id:pc.value, village:pv.value, gram_panchayat:pg.value }) }); blocks = await api("/api/meta"); show("clusters"); };
