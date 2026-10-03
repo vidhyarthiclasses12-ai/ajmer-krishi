@@ -841,14 +841,14 @@ def workflow(rid):
         stage = "submitted" if status in ("returned", "correction_required", "corrected", "draft") else status
         scheme = rec["form_type"]
         chain = ["lrp_signed", "crp_signed", "sakhi_signed", "supervisor_signed", "aao_approved"] if scheme in ("pkvy", "natural") else ["supervisor_signed", "aao_approved"]
-        role_status = {"lrp": "lrp_signed", "crp": "crp_signed", "krishi_sakhi": "sakhi_signed", "supervisor": "supervisor_signed", "aao": "aao_approved"}
-        order = ["lrp", "crp", "krishi_sakhi", "supervisor", "aao"] if scheme in ("pkvy", "natural") else ["supervisor", "aao"]
+        role_status = {"lrp": "lrp_signed", "crp": "crp_signed", "krishi_sakhi": "sakhi_signed", "crp": "sakhi_signed", "supervisor": "supervisor_signed", "aao": "aao_approved"}
+        order = ["lrp", "supervisor", "aao"] if scheme == "pkvy" else ["krishi_sakhi", "supervisor", "aao"] if scheme == "natural" else ["supervisor", "aao"]
         current = {"submitted": -1, "lrp_signed": 0, "crp_signed": 1, "sakhi_signed": 2, "supervisor_signed": 3, "signed": 3}.get(stage, -1)
         if scheme not in ("pkvy", "natural") and stage in ("submitted", "draft"):
             current = -1
         expect = order[current + 1] if current + 1 < len(order) else None
-        if actor == "krishi_sakhi" and stage in ("submitted", "lrp_signed", "crp_signed"):
-            expect = "krishi_sakhi"
+        if scheme == "natural" and actor in ("crp", "krishi_sakhi") and stage in ("submitted", "returned", "draft"):
+            expect = actor
         if actor != expect and u["role"] != "admin":
             con.close()
             return jsonify({"error": "You cannot sign at this stage"}), 403
