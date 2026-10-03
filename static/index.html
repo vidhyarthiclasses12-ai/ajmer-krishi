@@ -35,10 +35,10 @@
 <script>
 let me=null, blocks={}, scheme=null, tab="home", year="2026-27", realRole="";
 const SCHEMES={
-  pkvy:{title:"PKVY", full:"25 farmer, total 20 hectare", menu:["Dashboard","Farmer","Bulk Upload","Complete","Reports"]},
-  natural:{title:"Natural Farming", full:"125 farmer, 1 acre each", menu:["Dashboard","Farmer","Bulk Upload","Complete","Reports"]},
-  minikit:{title:"Minikit", full:"No farmer limit", menu:["Dashboard","Farmer","Bulk Upload","Complete","Reports"]},
-  demo:{title:"Demonstration", full:"No farmer limit", menu:["Dashboard","Farmer","Bulk Upload","Complete","Reports"]}
+  pkvy:{title:"PKVY", full:"25 farmer, total 20 hectare", menu:["Dashboard","Edit data","Bulk Upload","Complete","Reports"]},
+  natural:{title:"Natural Farming", full:"125 farmer, 1 acre each", menu:["Dashboard","Edit data","Bulk Upload","Complete","Reports"]},
+  minikit:{title:"Minikit", full:"No farmer limit", menu:["Dashboard","Edit data","Bulk Upload","Complete","Reports"]},
+  demo:{title:"Demonstration", full:"No farmer limit", menu:["Dashboard","Edit data","Bulk Upload","Complete","Reports"]}
 };
 async function api(url, opt={}) {
   const res = await fetch(url, { credentials:"same-origin", ...opt, headers: opt.body instanceof FormData ? undefined : { "Content-Type":"application/json", ...(opt.headers||{}) } });
@@ -63,7 +63,7 @@ async function show(name){
   const farmers=rows.filter(r=>r.form_type==="farmer_master");
   const panel=document.getElementById("panel");
   if(!scheme && name==="home") panel.innerHTML=home(rows);
-  else if(name==="farmers"||name==="Farmer") panel.innerHTML=farmerMaster(farmers);
+  else if(name==="farmers"||name==="Farmer"||name==="Edit data") panel.innerHTML=editView(mine);
   else if(name==="users"||name==="Users & Roles") panel.innerHTML=await userView();
   else if(name==="masters"||name==="Master Data") panel.innerHTML=clusterView(await api("/api/users"));
   else if(name==="Bulk Upload"||name==="excel"||name==="Excel") panel.innerHTML=excelView();
@@ -105,6 +105,18 @@ function lgdSelects(){
 function farmerMaster(rows){ rows=scheme?rows.filter(r=>(r.payload.scheme||scheme)===scheme):rows;
   return `<div class="card"><h3>Farmer Master</h3><p>Register a farmer once, then use the same Farmer ID in a scheme.</p><div class="grid"><div><label>Name</label><input id="farmer"/></div><div><label>Father/Husband</label><input id="father"/></div><div><label>Mobile</label><input id="fmobile"/></div><div><label>Jan Aadhaar</label><input id="jan" placeholder="masked in lists"/></div><div><label>Category</label><select id="category"><option>General</option><option>SC</option><option>ST</option><option>OBC</option></select></div>${lgdSelects()}<div><label>Land area</label><input id="area"/></div></div><button class="go" id="saveFarmer">Save farmer</button></div>
   <div class="card"><input id="q" placeholder="Search name / mobile" oninput="filterCards(this)"/><table><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Village</th></tr>${rows.map(r=>`<tr data-q="${r.payload.farmer} ${r.payload.mobile}"><td>${r.payload.farmer_id||r.id.slice(0,8)}</td><td>${r.payload.farmer}</td><td>${r.payload.mobile||""}</td><td>${(r.payload.jan||"").length>4?"XXXX"+r.payload.jan.slice(-4):""}</td><td>${r.village||""}</td></tr>`).join("")}</table></div>`;
+}
+
+function editView(rows){
+  const open=rows.filter(r=>["submitted","draft","returned","correction_required"].includes(r.status));
+  return `<div class="card"><h3>Edit uploaded data</h3><p>Excel rows can be edited until signed. Reverted rows also appear here.</p>
+    ${open.map(r=>`<div style="border-bottom:1px solid #eee;padding:8px 0"><b>${r.payload["Farmer Name"]||r.payload.farmer||""}</b> <span class="pill">${r.status}</span>
+      <div class="grid"><div><label>Farmer Name</label><input id="e-name-${r.id}" value="${r.payload["Farmer Name"]||r.payload.farmer||""}"/></div>
+      <div><label>Village</label><input id="e-vill-${r.id}" value="${r.payload.Village||r.village||""}"/></div>
+      <div><label>Mobile</label><input id="e-mob-${r.id}" value="${r.payload.Mobile||""}"/></div>
+      <div><label>Crop</label><input id="e-crop-${r.id}" value="${r.payload.Crop||""}"/></div></div>
+      <button class="go" data-edit="${r.id}">Save edit</button></div>`).join("")||"<p>No editable records. Signed data is locked.</p>"}
+  </div>`;
 }
 function schemeForm(name, rows){
   const common = ["Farmer ID","Farmer Name","Father/Husband Name","Gender","Category","Mobile","Jan Aadhaar","District","Tehsil","Block","Gram Panchayat","Village","Total Land Area"];
@@ -200,6 +212,7 @@ function wire(){
     document.getElementById("printPdf").onclick=()=>{ const w=window.open(""); w.document.write(html); w.document.close(); w.print(); };
   };
   const rev=document.getElementById("rev"); if(rev) rev.onclick=async()=>{ try{ const r=await api("/api/revert",{method:"POST", body:JSON.stringify({cluster:revC.value, reason:revR.value})}); alert(r.count+" records wapas bheje"); }catch(e){ alert(e.message);} };
+  document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=async()=>{ try{ await api("/api/records/"+b.dataset.edit+"/edit",{method:"POST", body:JSON.stringify({payload:{"Farmer Name":document.getElementById("e-name-"+b.dataset.edit).value, farmer:document.getElementById("e-name-"+b.dataset.edit).value, Village:document.getElementById("e-vill-"+b.dataset.edit).value, Mobile:document.getElementById("e-mob-"+b.dataset.edit).value, Crop:document.getElementById("e-crop-"+b.dataset.edit).value}})}); alert("Saved"); show("Edit data"); }catch(e){ alert(e.message);} });
   const sf=document.getElementById("saveFarmer"); if(sf) sf.onclick=async()=>{ await api("/api/records",{method:"POST", body:JSON.stringify({ cluster:me.cluster, village:village.value, form_type:"farmer_master", payload:{ farmer_id:"FRM-2026-"+Date.now().toString().slice(-6), farmer:farmer.value, father:father.value, mobile:fmobile.value, category:category.value, jan: (document.getElementById("jan")||{}).value||"", year }})}); show("farmers"); };
   const loadF=document.getElementById("loadFarmer"); if(loadF) loadF.onclick=async()=>{ const rows=await api("/api/records"); const q=(searchFarmer.value||"").toLowerCase(); const f=rows.find(r=>r.form_type==="farmer_master" && ((r.payload.farmer_id||"")+(r.payload.farmer||"")+(r.payload.mobile||"")).toLowerCase().includes(q)); if(!f) return alert("Farmer was not found in Farmer Master"); document.getElementById("masterBox").textContent="Loaded "+f.payload.farmer_id+" · "+f.payload.farmer+" · "+(f.payload.father||"")+" · "+(f.village||""); searchFarmer.value=f.payload.farmer_id; };
   const sub=document.getElementById("submit"); if(sub) sub.onclick=()=>saveRecord("submitted");
