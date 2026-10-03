@@ -837,20 +837,20 @@ def workflow(rid):
             return jsonify({"error": "A return reason is required"}), 400
         new = "returned"
     elif action == "sign":
-        actor = data.get("actor") if u["role"] == "admin" and data.get("actor") in ("supervisor", "aao") else u["role"]
+        actor = data.get("actor") if u["role"] == "admin" and data.get("actor") in ("lrp", "crp", "krishi_sakhi", "supervisor", "aao") else u["role"]
         stage = "submitted" if status in ("returned", "correction_required", "corrected", "draft") else status
-        if stage == "signed":
-            stage = "supervisor_signed"
-        expect = NEXT_ROLE.get(stage)
-        if actor not in ("admin", expect or "") and not (u["role"] == "admin" and stage in ("submitted", "supervisor_signed")):
+        scheme = rec["form_type"]
+        chain = ["lrp_signed", "crp_signed", "sakhi_signed", "supervisor_signed", "aao_approved"] if scheme in ("pkvy", "natural") else ["supervisor_signed", "aao_approved"]
+        role_status = {"lrp": "lrp_signed", "crp": "crp_signed", "krishi_sakhi": "sakhi_signed", "supervisor": "supervisor_signed", "aao": "aao_approved"}
+        order = ["lrp", "crp", "krishi_sakhi", "supervisor", "aao"] if scheme in ("pkvy", "natural") else ["supervisor", "aao"]
+        current = {"submitted": -1, "lrp_signed": 0, "crp_signed": 1, "sakhi_signed": 2, "supervisor_signed": 3, "signed": 3}.get(stage, -1)
+        if scheme not in ("pkvy", "natural") and stage in ("submitted", "draft"):
+            current = -1
+        expect = order[current + 1] if current + 1 < len(order) else None
+        if actor != expect and u["role"] != "admin":
             con.close()
             return jsonify({"error": "You cannot sign at this stage"}), 403
-        if stage in ("submitted", "draft"):
-            new = "supervisor_signed"
-        elif stage == "supervisor_signed":
-            new = "aao_approved"
-        else:
-            new = "signed"
+        new = role_status.get(actor if u["role"] == "admin" else expect, "signed")
     else:
         con.close()
         return jsonify({"error": "Invalid action"}), 400
