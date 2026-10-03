@@ -593,10 +593,10 @@ def norm(v):
 
 
 TEMPLATES = {
-  "pkvy": ["Farmer ID","Farmer Name","Cluster ID","District","Tehsil","GP","Village","Area","Crop","Activity","Year"],
-  "natural": ["Farmer ID","Farmer Name","District","Tehsil","Village","Crop","Area","Practice","Activity","Unit","Year"],
-  "minikit": ["Farmer ID","Farmer Name","District","Tehsil","Village","Crop","Variety","Kit Type","Quantity","Lot Number","Distribution Date"],
-  "demo": ["Demonstration ID","Farmer ID","Farmer Name","District","Tehsil","Village","Crop","Variety","Area","Activity","Input","Visit Date","Result"],
+  "pkvy": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Season","Khasra No.","Land Area","PKVY Area","Crop","Variety","Activity","Activity Area","Input","Input Quantity","Input Unit","Activity Date","Remarks","Status"],
+  "natural": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Season","Khasra No.","Natural Farming Area","Crop","Variety","Practice","Practice Area","Input Type","Input Name","Input Quantity","Unit","Training Status","Training Date","Production","Production Unit","Remarks","Status"],
+  "minikit": ["Farmer ID","Farmer Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Financial Year","Scheme","Component","Distribution Date","Crop","Variety","Item Type","Item Name","Batch/Lot No.","Quantity","Unit","Distribution Location","Receiver Confirmation","Verification Status","Remarks"],
+  "demo": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety","Technology","Intervention","Input","Input Quantity","Sowing Date","Harvest Date","Expected Yield","Demonstration Yield","Farmer Practice Yield","Yield Unit","Result","Remarks","Status"],
 }
 REQUIRED_BY = {k: ["Farmer Name","Village"] for k in TEMPLATES}
 
