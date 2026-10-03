@@ -651,7 +651,10 @@ def excel_upload():
     f = request.files.get("file")
     if not f:
         return jsonify({"error": "File is missing"}), 400
-    wb = load_workbook(f, data_only=True)
+    try:
+        wb = load_workbook(f, data_only=True)
+    except Exception:
+        return jsonify({"error": "This is not a valid Excel file. Download the template and upload .xlsx"}), 400
     ws = wb.active
     scheme = request.form.get("scheme") or "pkvy"
     headers = [str(c.value or "").strip() for c in next(ws.iter_rows(max_row=1))]
