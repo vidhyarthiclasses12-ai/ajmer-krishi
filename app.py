@@ -733,11 +733,12 @@ def workflow(rid):
             return jsonify({"error": "वापस भेजने का कारण जरूरी है"}), 400
         new = "returned"
     elif action == "sign":
+        actor = data.get("actor") if u["role"] == "admin" and data.get("actor") in ("supervisor", "aao") else u["role"]
         expect = NEXT_ROLE.get(status)
-        if u["role"] not in ("admin", expect or ""):
+        if actor not in ("admin", expect or ""):
             con.close()
             return jsonify({"error": "इस चरण पर आप साइन नहीं कर सकते"}), 403
-        new = {"supervisor": "supervisor_signed", "aao": "aao_approved"}.get(u["role"], "signed")
+        new = {"supervisor": "supervisor_signed", "aao": "aao_approved"}.get(actor, "signed")
     else:
         con.close()
         return jsonify({"error": "एक्शन गलत है"}), 400
