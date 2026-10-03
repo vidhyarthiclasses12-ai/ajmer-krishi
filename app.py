@@ -163,6 +163,14 @@ def manager_required(fn):
         return fn(*a, **k)
     return wrap
 
+
+def audit(con, user, action, entity, entity_id="", detail=""):
+    con.execute("CREATE TABLE IF NOT EXISTS audit_logs (id TEXT PRIMARY KEY, user_name TEXT, role TEXT, action TEXT, entity TEXT, entity_id TEXT, detail TEXT, ip TEXT, at TEXT)")
+    con.execute(
+        "INSERT INTO audit_logs VALUES (?,?,?,?,?,?,?,?,?)",
+        (uuid.uuid4().hex, (user or {}).get("name"), (user or {}).get("role"), action, entity, entity_id, detail, request.remote_addr or "", datetime.now().isoformat(timespec="seconds")),
+    )
+
 def add_history(con, rid, status, note, by):
     con.execute(
         "INSERT INTO history VALUES (?,?,?,?,?,?)",
@@ -187,6 +195,9 @@ def login():
     FAILS[ip] = 0
     session.permanent = True
     session["uid"] = user["id"]
+    con = db()
+    audit(con, dict(user), "login", "session", user["id"])
+    con.commit(); con.close()
     return jsonify({"id": user["id"], "name": user["name"], "role": user["role"], "cluster": user["cluster"], "username": user["username"], "mobile": user["mobile"]})
 
 @app.post("/api/logout")
@@ -762,6 +773,7 @@ def workflow(rid):
     add_history(con, rid, new, note or action, u["name"])
     con.commit()
     con.close()
+    audit(con, u, action, "record", rid, new)
     return jsonify({"ok": True, "status": new})
 
 @app.post("/api/revert")
