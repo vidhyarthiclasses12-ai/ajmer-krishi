@@ -630,7 +630,8 @@ def edit_record(rid):
         return jsonify({"error": "Signed record cannot be edited. Ask District Admin to revert it."}), 400
     payload = json.loads(rec["payload"] or "{}")
     payload.update(data.get("payload") or {})
-    con.execute("UPDATE records SET payload=?, village=? WHERE id=?", (json.dumps(payload, ensure_ascii=False), payload.get("Village") or rec["village"], rid))
+    new_status = "submitted" if rec["status"] in ("returned", "correction_required", "corrected") else rec["status"]
+    con.execute("UPDATE records SET payload=?, village=?, status=? WHERE id=?", (json.dumps(payload, ensure_ascii=False), payload.get("Village") or rec["village"], new_status, rid))
     add_history(con, rid, "corrected", "Edited before sign", u["name"])
     con.commit(); con.close()
     return jsonify({"ok": True})
@@ -820,7 +821,8 @@ def workflow(rid):
         new = "returned"
     elif action == "sign":
         actor = data.get("actor") if u["role"] == "admin" and data.get("actor") in ("supervisor", "aao") else u["role"]
-        expect = NEXT_ROLE.get(status)
+        stage = "submitted" if status in ("returned", "correction_required", "corrected", "draft") else status
+        expect = NEXT_ROLE.get(stage)
         if actor not in ("admin", expect or ""):
             con.close()
             return jsonify({"error": "You cannot sign at this stage"}), 403
@@ -833,7 +835,9 @@ def workflow(rid):
     sig = data.get("signature") or ""
     if sig.startswith("data:image"):
         con.execute("CREATE TABLE IF NOT EXISTS signatures (id TEXT PRIMARY KEY, record_id TEXT, role TEXT, by_name TEXT, image TEXT, at TEXT)")
-        con.execute("INSERT INTO signatures VALUES (?,?,?,?,?,?)", (uuid.uuid4().hex, rid, data.get("actor") or u["role"], u["name"], sig, datetime.now().isoformat(timespec="seconds")))
+        role = data.get("actor") or u["role"]
+        con.execute("DELETE FROM signatures WHERE record_id=? AND role=?", (rid, role))
+        con.execute("INSERT INTO signatures VALUES (?,?,?,?,?,?)", (uuid.uuid4().hex, rid, role, u["name"], sig, datetime.now().isoformat(timespec="seconds")))
     try:
         audit(con, u, action, "record", rid, new)
     except Exception:
