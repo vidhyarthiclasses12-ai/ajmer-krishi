@@ -363,8 +363,10 @@ def admin_reset():
 @manager_required
 def add_user():
     data = request.json or {}
-    if data.get("role") not in ("admin", "district_admin", "krishi_sakhi", "crp"):
-        return jsonify({"error": "रोल गलत है"}), 400
+    me = current()
+    allowed = ("krishi_sakhi", "crp") if me["role"] == "district_admin" else ("district_admin", "krishi_sakhi", "crp")
+    if data.get("role") not in allowed:
+        return jsonify({"error": "District Admin sirf cluster user bana sakta hai"}), 403
     if len(data.get("password", "")) < 8:
         return jsonify({"error": "पासवर्ड कम से कम 8 अक्षर"}), 400
     mobile = (data.get("mobile") or "").strip()
