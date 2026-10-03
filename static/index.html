@@ -118,9 +118,21 @@ function schemeForm(name, rows){
   return `<div class="card"><h3>${SCHEMES[scheme].title} · ${name}</h3><label>Farmer ID search</label><input id="searchFarmer" placeholder="FRM-2026"/><button type="button" class="line" id="loadFarmer">Load master</button><p id="masterBox" class="muted"></p><div class="grid">${common.map(f=>field(f,true)).join("")}${extra.map(f=>field(f,false)).join("")}</div><p id="cond"></p><label>Photo</label><input id="photo" type="file" accept="image/*" capture="environment"/><button class="line" id="draft">Save draft</button> <button class="go" id="submit">Submit</button></div><div class="card">${rows.filter(r=>r.payload.section===name).map(r=>`<div>${r.payload.application_no} · ${r.payload.farmer||""} <span class="pill">${r.status}</span></div>`).join("")||"No records"}</div>`;
 }
 function verifyView(rows){
-  const need={supervisor:"submitted",aao:"supervisor_signed",admin:""};
-  const mine=rows.filter(r=>me.role==="admin"||me.role==="supervisor"&&(r.status==="submitted"||r.status==="draft")||r.status===need[me.role]);
-  return `<div class="card"><h3>Workflow · ${me.role}</h3><p class="muted">LRP sign → CRP sign → Krishi Sakhi sign → Supervisor approve → District process</p>${mine.map(r=>`<div style="border-bottom:1px solid #eee;padding:8px 0"><b>${r.payload.application_no||r.id.slice(0,6)}</b> ${r.payload.farmer||""} <span class="pill">${r.status}</span><label>Remark</label><input id="rm-${r.id}"/><button class="go" data-wf="${r.id}" data-a="sign">Sign & submit</button> <button class="line" data-wf="${r.id}" data-a="return">Return</button></div>`).join("")||"<p>Is role par pending nahi</p>"}</div>`;
+  const mine=rows.filter(r=>{
+    if(me.role==="aao") return r.status==="supervisor_signed";
+    if(me.role==="supervisor") return r.status==="submitted"||r.status==="draft"||r.status==="returned";
+    return true;
+  });
+  return `<div class="card"><h3>${me.role==="aao"?"AAO verification":"Supervisor complete"}</h3>
+    <p class="muted">${mine.length} record. Neeche sign banayein ya photo upload karein, phir Sign & submit.</p>
+    ${mine.map(r=>`<div style="border-bottom:1px solid #eee;padding:10px 0"><b>${r.payload.application_no||r.id.slice(0,6)}</b> ${r.payload.farmer||r.payload["Farmer Name"]||""} · ${r.payload.Village||r.village||""} <span class="pill">${r.status}</span>
+      <label>Remark</label><input id="rm-${r.id}"/>
+      <label>Draw signature</label><canvas id="sig-${r.id}" width="280" height="80" style="border:1px solid #ccc;background:#fff"></canvas>
+      <button type="button" class="line" data-clear="${r.id}">Clear</button>
+      <label>Ya signature photo</label><input id="sigf-${r.id}" type="file" accept="image/*"/>
+      <button class="go" data-wf="${r.id}" data-a="sign">Sign & submit</button>
+      <button class="line" data-wf="${r.id}" data-a="return">Return</button>
+    </div>`).join("")||"<p>Is role par pending record nahi. Supervisor sign ke baad hi AAO ko dikhega.</p>"}</div>`;
 }
 function reportView(rows){
   const ready=rows.filter(r=>r.status==="aao_approved"||me.role==="admin");
@@ -177,7 +189,10 @@ function wire(){
   const loadF=document.getElementById("loadFarmer"); if(loadF) loadF.onclick=async()=>{ const rows=await api("/api/records"); const q=(searchFarmer.value||"").toLowerCase(); const f=rows.find(r=>r.form_type==="farmer_master" && ((r.payload.farmer_id||"")+(r.payload.farmer||"")+(r.payload.mobile||"")).toLowerCase().includes(q)); if(!f) return alert("Farmer master me nahi mila"); document.getElementById("masterBox").textContent="Loaded "+f.payload.farmer_id+" · "+f.payload.farmer+" · "+(f.payload.father||"")+" · "+(f.village||""); searchFarmer.value=f.payload.farmer_id; };
   const sub=document.getElementById("submit"); if(sub) sub.onclick=()=>saveRecord("submitted");
   const dr=document.getElementById("draft"); if(dr) dr.onclick=()=>saveRecord("draft");
-  document.querySelectorAll("[data-wf]").forEach(b=>b.onclick=async()=>{ try{ const note=(document.getElementById("rm-"+b.dataset.wf)||{}).value||""; if(b.dataset.a==="return"&&!note) return alert("Reason likhna zaroori hai"); await api("/api/workflow/"+b.dataset.wf,{method:"POST", body:JSON.stringify({action:b.dataset.a, note})}); alert("Status update"); show("Verification"); }catch(e){ alert(e.message);} });
+  document.querySelectorAll("canvas[id^=sig-]").forEach(c=>{ const ctx=c.getContext("2d"); let draw=false; c.onpointerdown=e=>{ draw=true; ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY); }; c.onpointermove=e=>{ if(!draw) return; ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke(); }; c.onpointerup=()=>draw=false; });
+  document.querySelectorAll("[data-clear]").forEach(b=>b.onclick=()=>{ const c=document.getElementById("sig-"+b.dataset.clear); c.getContext("2d").clearRect(0,0,c.width,c.height); });
+  document.querySelectorAll("[data-wf]").forEach(b=>b.onclick=async()=>{ try{ const note=(document.getElementById("rm-"+b.dataset.wf)||{}).value||""; if(b.dataset.a==="return"&&!note) return alert("Reason likhna zaroori hai"); const canvas=document.getElementById("sig-"+b.dataset.wf); const file=(document.getElementById("sigf-"+b.dataset.wf)||{}).files; if(b.dataset.a==="sign" && canvas && !file?.[0]){ const blank=document.createElement("canvas"); blank.width=canvas.width; blank.height=canvas.height; if(canvas.toDataURL()===blank.toDataURL()) return alert("Pehle sign banayein ya photo upload karein"); }
+    await api("/api/workflow/"+b.dataset.wf,{method:"POST", body:JSON.stringify({action:b.dataset.a, note, signature:canvas?canvas.toDataURL():""})}); alert("Sign save ho gaya"); show("Complete"); }catch(e){ alert(e.message);} });
   const fillMap=()=>{ const t=document.getElementById("mteh"), g=document.getElementById("mgp"); if(!t||!g) return; const keep=g.value; g.innerHTML=Object.keys((window.LGD||{})[t.value]||{}).map(x=>`<option ${x===keep?"selected":""}>${x}</option>`).join(""); };
   if(document.getElementById("mteh")){ fillMap(); document.getElementById("mteh").onchange=fillMap; document.getElementById("mgp").onchange=fillMap; }
   const mapCluster=document.getElementById("mapCluster");
