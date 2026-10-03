@@ -1,348 +1,152 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="hi">
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ajmer Agriculture Information</title>
 <style>
-  :root { --side:#14532d; --side2:#166534; --bg:#f3f4f6; --line:#e5e7eb; --ink:#111827; }
+  :root { --side:#14532d; --bg:#f3f4f6; --line:#e5e7eb; }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:"Segoe UI",sans-serif; background:var(--bg); color:var(--ink); }
+  body { margin:0; font-family:"Segoe UI",sans-serif; background:var(--bg); color:#111827; }
   button, input, select, textarea { font:inherit; }
   button { cursor:pointer; border:0; border-radius:8px; padding:8px 12px; font-weight:700; }
   .go { background:#166534; color:#fff; } .line { background:#fff; border:1px solid #bbf7d0; color:#166534; } .bad { background:#fee2e2; color:#b91c1c; }
   input, select, textarea { width:100%; border:1px solid var(--line); border-radius:8px; padding:8px; margin-top:4px; }
-  label { font-size:13px; font-weight:700; display:block; margin-top:10px; }
-  .login-wrap { min-height:100vh; display:grid; place-items:center; }
-  .login { width:380px; background:#fff; border-radius:16px; padding:22px; box-shadow:0 8px 24px rgba(0,0,0,.06); }
+  label { font-size:13px; font-weight:700; display:block; margin-top:8px; }
   .app { display:grid; grid-template-columns:230px 1fr; min-height:100vh; }
-  aside { background:var(--side); color:#fff; padding:16px 10px; }
-  aside h2 { font-size:13px; letter-spacing:.08em; margin:8px 12px 14px; }
-  aside button { display:flex; width:100%; text-align:left; background:transparent; color:#d1fae5; border-radius:8px; margin-bottom:4px; }
-  aside button.active { background:var(--side2); color:#fff; }
-  main { display:flex; flex-direction:column; }
-  header { background:#fff; border-bottom:1px solid var(--line); padding:12px 18px; display:flex; justify-content:space-between; align-items:center; }
-  header b { color:#166534; font-size:18px; }
-  .content { padding:18px; }
-  .card { background:#fff; border-radius:12px; padding:16px; border:1px solid #eef2f7; margin-bottom:12px; }
-  .stats { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:12px 0; }
-  .stat { background:#fff; border-radius:12px; padding:14px; border:1px solid #eef2f7; }
-  .stat b { font-size:28px; display:block; }
-  .muted { color:#6b7280; font-size:13px; }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  td, th { text-align:left; padding:8px; border-bottom:1px solid var(--line); vertical-align:top; }
-  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  img.ph { width:92px; height:92px; object-fit:cover; border-radius:8px; margin:4px; }
+  aside { background:var(--side); color:#fff; padding:12px; }
+  aside button { display:block; width:100%; text-align:left; background:transparent; color:#d1fae5; margin-bottom:4px; }
+  aside button.active { background:#166534; color:#fff; }
+  header { background:#fff; border-bottom:1px solid var(--line); padding:12px 16px; display:flex; justify-content:space-between; gap:8px; align-items:center; }
+  .content { padding:16px; }
+  .card { background:#fff; border-radius:12px; padding:14px; border:1px solid #eef2f7; margin-bottom:12px; }
+  .schemes { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .stat { background:#f8fafc; border-radius:10px; padding:8px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   .pill { background:#dcfce7; color:#166534; border-radius:99px; padding:2px 8px; font-size:11px; font-weight:700; }
-  @media (max-width:800px) { .app { grid-template-columns:1fr; } .stats,.grid { grid-template-columns:1fr 1fr; } aside { display:flex; overflow:auto; } aside button { width:auto; } }
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  td, th { text-align:left; padding:6px; border-bottom:1px solid var(--line); }
+  .login { max-width:420px; margin:40px auto; }
+  @media (max-width:800px) { .app { grid-template-columns:1fr; } .schemes,.grid { grid-template-columns:1fr; } aside { display:flex; overflow:auto; } aside button { width:auto; } }
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script>
-let me = null, blocks = {}, tab = "dash";
+let me=null, blocks={}, scheme=null, tab="home", year="2026-27";
+const SCHEMES={
+  pkvy:{title:"PKVY", full:"Paramparagat Krishi Vikas Yojana", menu:["Dashboard","Cluster","Farmer","Activity","Verification","Reports"]},
+  natural:{title:"Natural Farming", full:"प्राकृतिक खेती", menu:["Dashboard","Farmer","Activity","Field Visit","Verification","Reports"]},
+  minikit:{title:"Minikit", full:"Minikit Distribution", menu:["Dashboard","Stock","Beneficiary","Distribution","Verification","Reports"]},
+  demo:{title:"Demonstration", full:"फसल/तकनीकी प्रदर्शन", menu:["Dashboard","Planning","Field","Visit","Verification","Reports"]}
+};
 async function api(url, opt={}) {
   const res = await fetch(url, { credentials:"same-origin", headers: opt.body instanceof FormData ? undefined : { "Content-Type":"application/json" }, ...opt });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Error");
+  const data = await res.json().catch(()=>({}));
+  if (!res.ok) throw new Error(data.error||"Error");
   return data;
 }
-async function boot() {
-  me = await fetch("/api/me").then(r => r.json());
-  if (me) { blocks = await api("/api/meta"); window.LGD = (await api("/api/directory")).tree || {}; }
-  render();
+async function boot(){ me=await fetch("/api/me").then(r=>r.json()); if(me){ blocks=await api("/api/meta"); window.LGD=(await api("/api/directory")).tree||{}; } render(); }
+function render(){ document.getElementById("app").innerHTML = me? shell(): login(); bind(); }
+function login(){ return `<div class="card login"><h2 style="color:#166534">Ajmer Agriculture Information</h2><label>Username</label><input id="u"/><label>Password</label><input id="p" type="password"/><p id="err" style="color:#b91c1c"></p><button class="go" id="go" style="width:100%">Login</button><p style="font-size:12px;color:#6b7280">Help: जिला कृषि कार्यालय, अजमेर · Version 1.0</p></div>`; }
+function shell(){
+  const items = scheme? SCHEMES[scheme].menu.map(m=>[m,m]) : [["home","Dashboard"],["farmers","Farmer Master"],["users","Users & Roles"],["masters","Master Data"],["excel","Excel"],["log","Audit Log"],["settings","Settings"]];
+  return `<div class="app"><aside><b>KRISHI WEB APP</b>${items.map(([id,label])=>`<button data-t="${id}" class="${tab===id?"active":""}">${label}</button>`).join("")}${scheme?`<button id="back">Main Dashboard</button>`:""}</aside>
+  <main><header><div><b>Ajmer Agriculture Information</b><div style="font-size:12px;color:#6b7280">${scheme?SCHEMES[scheme].full:"Department of Agriculture"} · FY ${year}</div></div>
+  <span><select id="fy"><option>2025-26</option><option selected>2026-27</option><option>2027-28</option></select> ${me.name} · ${me.role} <button id="out" class="line">Logout</button></span></header>
+  <div class="content" id="panel"></div></main></div>`;
 }
-function render() { document.getElementById("app").innerHTML = me ? shell() : login(); bind(); }
-function login() {
-  return `<div class="login-wrap"><div class="login">
-    <h2 style="color:#166534;margin-top:0">Ajmer Agriculture Information</h2>
-    <label>Username</label><input id="u" />
-    <label>Password</label><input id="p" type="password" />
-    <p id="err" style="color:#b91c1c"></p>
-    <button class="go" id="go" style="width:100%">Login</button>
-    </div></div>`;
+async function show(name){
+  tab=name;
+  const rows=await api("/api/records");
+  const mine=scheme? rows.filter(r=>(r.payload.scheme||r.form_type)===scheme && (r.payload.year||year)===year) : rows;
+  const farmers=rows.filter(r=>r.form_type==="farmer_master");
+  const panel=document.getElementById("panel");
+  if(!scheme && name==="home") panel.innerHTML=home(rows);
+  else if(name==="farmers"||name==="Farmer") panel.innerHTML=farmerMaster(farmers);
+  else if(name==="users"||name==="Users & Roles") panel.innerHTML=await userView();
+  else if(name==="masters"||name==="Master Data") panel.innerHTML=clusterView();
+  else if(name==="excel"||name==="Excel") panel.innerHTML=excelView();
+  else if(name==="log"||name==="Audit Log") panel.innerHTML=logView(rows);
+  else if(name==="settings"||name==="Settings") panel.innerHTML=`<div class="card"><h3>Settings</h3><p>Financial year upar se badlega. Purana saal ka data delete nahi hota.</p></div>`;
+  else if(name==="Dashboard") panel.innerHTML=schemeDash(mine);
+  else if(name==="Verification") panel.innerHTML=verifyView(mine);
+  else if(name==="Reports") panel.innerHTML=reportView(mine);
+  else panel.innerHTML=schemeForm(name, mine);
+  wire();
 }
-function shell() {
-  const items = [["dash","Dashboard"],["profile","Profile"],["farmers","Farmers"],["forms","Applications"],["photos","Documents"],["status","Status"],["notes","Notifications"],["reports","Reports"],["verify","Verification"],["clusters","Masters"],["users","Users & Roles"],["excel","Excel"],["log","Audit Log"],["settings","Settings"]];
-  return `<div class="app"><aside><h2>MENU</h2>${items.map(([id,label]) => `<button data-t="${id}" class="${tab===id?"active":""}">${label}</button>`).join("")}</aside>
-    <main><header><b>Ajmer Agriculture Information</b><span>${me.name} · ${postOf(me.role)} <button id="out" class="line">Logout</button></span></header>
-    <div class="content" id="panel"></div></main></div>`;
+function home(rows){
+  const card=(key,lines)=>`<div class="card"><h3>${SCHEMES[key].title}</h3><p style="color:#6b7280">${SCHEMES[key].full}</p>${lines.map(x=>`<div class="stat">${x}</div>`).join("")}<button class="go" data-open="${key}">OPEN ${SCHEMES[key].title}</button></div>`;
+  const c=k=>rows.filter(r=>(r.payload.scheme||"")===k && (r.payload.year||"2026-27")===year);
+  return `<h2>Main Dashboard</h2><div class="schemes">
+    ${card("pkvy",["Farmers "+c("pkvy").length,"Pending "+c("pkvy").filter(r=>r.status==="submitted").length])}
+    ${card("natural",["Farmers "+c("natural").length,"Activities "+c("natural").filter(r=>r.payload.kind==="activity").length])}
+    ${card("minikit",["Distributed "+c("minikit").length,"Pending "+c("minikit").filter(r=>r.status!=="approved").length])}
+    ${card("demo",["Planned "+c("demo").length,"Verified "+c("demo").filter(r=>r.status==="approved").length])}
+  </div><p style="color:#6b7280">Card kholne par sirf usi scheme ka system dikhega.</p>`;
 }
-async function show(name) {
-  tab = name;
-  document.querySelectorAll("aside button").forEach(b => b.classList.toggle("active", b.dataset.t===name));
-  const panel = document.getElementById("panel");
-  const rows = ["dash","farmers","forms","photos","reports","log","status","notes","verify"].includes(name) ? await api("/api/records") : [];
-  if (name==="profile") panel.innerHTML = profileView();
-  if (name==="dash") panel.innerHTML = dash(rows);
-  if (name==="status") panel.innerHTML = statusView(rows);
-  if (name==="notes") panel.innerHTML = notesView(rows);
-  if (name==="verify") panel.innerHTML = (me.role==="admin"||me.role==="district_admin") ? verifyView(rows) : `<div class="card">Verification System Admin aur District Admin ke liye hai.</div>`;
-  if (name==="farmers") panel.innerHTML = farmerTable(rows);
-  if (name==="forms") panel.innerHTML = formView(rows);
-  if (name==="photos") panel.innerHTML = gallery(rows);
-  if (name==="reports") panel.innerHTML = reportView(rows);
-  if (name==="clusters") panel.innerHTML = clusterView();
-  if (name==="users") panel.innerHTML = (me.role==="admin" || me.role==="district_admin") ? await userView() : `<div class="card">Only admin can manage users.</div>`;
-  if (name==="excel") panel.innerHTML = excelView();
-  if (name==="log") panel.innerHTML = logView(rows);
-  if (name==="settings") panel.innerHTML = `<div class="card"><h3>Settings</h3><p>Cluster: ${me.cluster}</p><p>Role: ${me.role}</p><p class="muted">Password change is done by admin from Users.</p></div>`;
-  wire(rows);
+function schemeDash(rows){
+  return `<div class="card"><h3>${SCHEMES[scheme].title} Dashboard</h3><div class="schemes">
+    <div class="stat">Records ${rows.length}</div><div class="stat">Pending ${rows.filter(r=>r.status==="submitted").length}</div>
+    <div class="stat">Approved ${rows.filter(r=>r.status==="approved").length}</div><div class="stat">Rejected ${rows.filter(r=>r.status==="rejected").length}</div>
+  </div></div>`;
 }
-function postOf(role) {
-  if (role==="admin") return "System Admin";
-  if (role==="district_admin") return "District Admin";
-  if (role==="crp") return "CRP";
-  return "Krishi Sakhi";
+function lgdSelects(){
+  const teh=Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("");
+  return `<div><label>Tehsil</label><select id="fteh">${teh}</select></div><div><label>Gram Panchayat</label><select id="fgp"></select></div><div><label>Village</label><select id="village"></select></div>`;
 }
-function profileView() {
-  return `<div class="card"><h3>User Profile</h3>
-    <p>Name: <b>${me.name}</b></p>
-    <p>Role: <b>${me.role==="district_admin"?"District Admin":me.role==="admin"?"System Admin":me.role}</b></p>
-    <p>Post: <b>${me.role==="district_admin"?"Agriculture Research Officer":me.role==="admin"?"System Admin":postOf(me.role)}</b></p>
-    <p>Cluster: <b>${me.cluster}</b></p>
-    <p>Username: <b>${me.username||"—"}</b></p><p>Mobile: <b>${me.mobile||"—"}</b></p>
-    <p class="muted">${me.role==="admin"?"System Admin changes, users aur clusters manage karta hai.":"District Admin sabhi clusters ka data dekh sakta hai."}</p>
-  </div>`;
+function farmerMaster(rows){
+  return `<div class="card"><h3>Farmer Master</h3><p>Ek baar register, phir har scheme me search karke jodein.</p><div class="grid"><div><label>Name</label><input id="farmer"/></div><div><label>Father/Husband</label><input id="father"/></div><div><label>Mobile</label><input id="fmobile"/></div><div><label>Category</label><select id="category"><option>General</option><option>SC</option><option>ST</option><option>OBC</option></select></div>${lgdSelects()}<div><label>Land area</label><input id="area"/></div></div><button class="go" id="saveFarmer">Save farmer</button></div>
+  <div class="card"><input id="q" placeholder="Search name / mobile" oninput="filterCards(this)"/><table><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Village</th></tr>${rows.map(r=>`<tr data-q="${r.payload.farmer} ${r.payload.mobile}"><td>${r.payload.farmer_id||r.id.slice(0,8)}</td><td>${r.payload.farmer}</td><td>${r.payload.mobile||""}</td><td>${r.village||""}</td></tr>`).join("")}</table></div>`;
 }
-function dash(rows) {
-  const farmers = new Set(rows.map(r => r.payload.farmer).filter(Boolean)).size;
-  const approved = rows.filter(r => r.status==="approved").length;
-  const corr = rows.filter(r => r.status==="correction_required").length;
-  return `<h2 style="margin:0">Dashboard</h2><p class="muted">Information collection overview</p>
-    <div class="stats">
-      <div class="stat"><span class="muted">Total Farmers</span><b>${farmers}</b></div>
-      <div class="stat"><span class="muted">Applications</span><b>${rows.length}</b></div>
-      <div class="stat"><span class="muted">Pending</span><b>${rows.filter(r=>r.status==="submitted"||r.status==="resubmitted").length}</b></div>
-      <div class="stat"><span class="muted">Approved</span><b>${approved}</b></div>
-      <div class="stat"><span class="muted">Rejected / Correction</span><b>${corr}</b></div>
-    </div>
-    <div class="grid">
-      <div class="card"><h3>Quick Actions</h3>
-        <button class="go" onclick="show('forms')">+ New Information Form</button>
-        <button class="line" onclick="show('farmers')">Farmer List</button>
-        <button class="line" onclick="show('reports')">View Forms</button>
-        <div style="margin-top:8px"><button class="line" onclick="show('photos')">View Photos</button></div>
-      </div>
-      <div class="card"><h3>System</h3><p>Current user: <b>${me.name}</b><br>Post: <b>${postOf(me.role)}</b><br>Cluster: <b>${me.cluster}</b></p></div>
-    </div>
-    <div class="card"><h3>Recent Forms</h3>${rows.length? table(rows.slice(0,8)) : "<p class='muted'>No records found.</p>"}</div>`;
+function schemeForm(name, rows){
+  const fields={
+    Cluster:["Cluster name","Area","Coordinator","Activity"],
+    Activity:["Activity","Crop","Quantity","Unit","Cost"],
+    Stock:["Crop","Variety","Lot","Quantity received","Challan"],
+    Beneficiary:["Farmer ID","Crop","Variety","Kit type","Quantity"],
+    Distribution:["Farmer ID","Lot","Quantity","Distribution date","Location"],
+    Planning:["Crop","Variety","Target farmers","Target area","Proposed date"],
+    Field:["Farmer ID","Khasra","Area","Crop","Technology"],
+    Visit:["Visit date","Officer","Observation","Advice","Result"],
+    "Field Visit":["Visit date","Officer","Crop","Observation","Advice"]
+  }[name]||["Farmer ID","Crop","Area","Remarks"];
+  return `<div class="card"><h3>${SCHEMES[scheme].title} · ${name}</h3><label>Search farmer</label><input id="searchFarmer" placeholder="Farmer ID / mobile / name"/><div class="grid">${lgdSelects()}${fields.map(f=>`<div><label>${f}</label><input id="f-${f.replace(/\\s/g,"")}"/></div>`).join("")}</div><button class="line" id="draft">Save draft</button> <button class="go" id="submit">Submit</button></div>
+  <div class="card">${rows.filter(r=>r.payload.section===name).map(r=>`<div>${r.payload.application_no} · ${r.payload.farmer||r.payload.section} <span class="pill">${r.status}</span></div>`).join("")||"No records"}</div>`;
 }
-function table(rows) {
-  return `<table><tr><th>Date</th><th>Farmer</th><th>Cluster</th><th>Crop</th><th>Status</th></tr>
-    ${rows.map(r => `<tr><td>${(r.created_at||"").slice(0,16)}</td><td>${r.payload.farmer||"—"}</td><td>${r.cluster}</td><td>${r.payload.crop||""}</td><td><span class="pill">${r.status}</span></td></tr>`).join("")}</table>`;
+function verifyView(rows){
+  return `<div class="card"><h3>${SCHEMES[scheme].title} Verification</h3>${rows.map(r=>`<div style="border-bottom:1px solid #eee;padding:8px 0"><b>${r.payload.application_no||""}</b> ${r.payload.farmer||""} <span class="pill">${r.status}</span><label>Remark</label><input id="rm-${r.id}"/><button class="go" data-st="${r.id}" data-s="approved">Verify</button> <button class="line" data-st="${r.id}" data-s="correction_required">Return</button> <button class="bad" data-st="${r.id}" data-s="rejected">Reject</button></div>`).join("")||"No records"}</div>`;
 }
-function statusView(rows) {
-  return `<div class="card"><h3>Application Status</h3><input id="qst" placeholder="Application no / farmer" oninput="filterCards(this)" />
-    ${rows.map(r=>`<div class="card" data-q="${(r.payload.application_no||"")+" "+(r.payload.farmer||"")}"><b>${r.payload.application_no||r.id.slice(0,8)}</b> · ${r.payload.farmer||""} · ${r.payload.scheme||"Information Form"} <span class="pill">${r.status}</span>
-      <div class="muted">Submitted → Verification → ${r.status}</div>
-      <div class="muted">${(r.history||[]).map(h=>h.at.slice(0,16)+" · "+h.status+" · "+(h.note||"")).join("<br>")}</div></div>`).join("")||"<p class='muted'>No records found.</p>"}</div>`;
+function reportView(rows){
+  return `<div class="card"><h3>${SCHEMES[scheme].title} Reports · ${year}</h3><p><a href="/api/export">Export Excel</a></p><table><tr><th>No</th><th>Section</th><th>Farmer</th><th>Status</th></tr>${rows.map(r=>`<tr><td>${r.payload.application_no||""}</td><td>${r.payload.section||""}</td><td>${r.payload.farmer||""}</td><td>${r.status}</td></tr>`).join("")}</table></div>`;
 }
-function notesView(rows) {
-  const notes = rows.flatMap(r => (r.history||[]).map(h => ({...h, app:r.payload.application_no||r.id.slice(0,8), farmer:r.payload.farmer})));
-  return `<div class="card"><h3>Notifications</h3>${notes.map(n=>`<div style="padding:8px 0;border-bottom:1px solid #eee"><b>${n.app}</b> · ${n.farmer||""}<br><span class="muted">${n.at.slice(0,16)} · ${n.status} · ${n.note||""}</span></div>`).join("")||"<p class='muted'>No notifications.</p>"}</div>`;
+function clusterView(){ return `<div class="card"><h3>Master Data</h3><p>Tehsil ${Object.keys(window.LGD||{}).length}. Clusters ${Object.keys(blocks).length}.</p><p>Naya gaon System Admin hi map karega. District Admin dropdown use karega.</p></div>`; }
+function excelView(){ return `<div class="card"><h3>Excel</h3><p>Scheme template: ${scheme||"common"}. Duplicate aur missing field error report ke saath aayenge.</p><input id="xf" type="file" accept=".xlsx"/><button class="go" id="xu">Upload</button><div id="xr"></div><p><a href="/api/export">Consolidated export</a></p></div>`; }
+function logView(rows){ const logs=rows.flatMap(r=>(r.history||[]).map(h=>`<tr><td>${h.at.slice(0,16)}</td><td>${h.by_name}</td><td>${h.status}</td><td>${h.note||""}</td></tr>`)); return `<div class="card"><h3>Audit Log</h3><table><tr><th>Time</th><th>User</th><th>Status</th><th>Remark</th></tr>${logs.join("")}</table></div>`; }
+async function userView(){ if(me.role!=="admin"&&me.role!=="district_admin") return `<div class="card">Users System Admin aur District Admin dekh sakte hain.</div>`; const users=await api("/api/users"); return `<div class="card"><h3>New user</h3><div class="grid"><div><label>Name</label><input id="nn"/></div><div><label>Role</label><select id="nr"><option value="district_admin">District Admin</option><option value="krishi_sakhi">Krishi Sakhi</option><option value="crp">CRP</option></select></div><div><label>Post</label><input id="npost" placeholder="Agriculture Research Officer"/></div><div><label>Mobile</label><input id="nm"/></div><div><label>Username</label><input id="nu"/></div><div><label>Password</label><input id="np"/></div></div><button class="go" id="nuadd">Add</button><div>${users.filter(u=>u.active!==0).map(u=>`<div>${u.name} · ${u.role} · ${u.username} ${me.role==="admin"&&u.id!==me.id?`<button class="bad" data-del="${u.id}">Delete</button>`:""}</div>`).join("")}</div></div>`; }
+function fillVillages(){ const teh=document.getElementById("fteh"), gp=document.getElementById("fgp"), vill=document.getElementById("village"); if(!teh||!gp||!vill) return; const keep=gp.value; gp.innerHTML=Object.keys((window.LGD||{})[teh.value]||{}).map(g=>`<option ${g===keep?"selected":""}>${g}</option>`).join(""); vill.innerHTML=(((window.LGD||{})[teh.value]||{})[gp.value]||[]).map(v=>`<option>${v}</option>`).join(""); }
+async function saveRecord(status){
+  const payload={ scheme, year, section:tab, application_no:(scheme||"GEN").toUpperCase()+"-"+Date.now().toString().slice(-8), farmer: (document.getElementById("farmer")||{}).value || (document.getElementById("searchFarmer")||{}).value, status };
+  document.querySelectorAll("[id^='f-']").forEach(el=>payload[el.id.slice(2)]=el.value);
+  await api("/api/records",{method:"POST", body:JSON.stringify({ cluster:me.cluster, village:(document.getElementById("village")||{}).value||"", form_type:scheme||"common", payload })});
+  alert(status==="draft"?"Draft saved":"Submitted"); show(tab);
 }
-function verifyView(rows) {
-  return `<div class="card"><h3>Verification Queue</h3>${rows.map(r=>`<div style="border-bottom:1px solid #eee;padding:8px 0"><b>${r.payload.application_no||r.id.slice(0,8)}</b> · ${r.payload.farmer||""} · ${r.cluster} · ${r.village||""} <span class="pill">${r.status}</span>
-    <div class="muted">${r.payload.crop||""} · ${r.payload.scheme||""}</div>
-    ${r.photos.map(p=>`<img class="ph" src="/api/photos/${p.id}"/>`).join("")}
-    <label>Remark</label><input id="rm-${r.id}" />
-    <button class="go" data-st="${r.id}" data-s="approved">Approve</button>
-    <button class="line" data-st="${r.id}" data-s="correction_required">Send back</button>
-    <button class="bad" data-st="${r.id}" data-s="rejected">Reject</button>
-  </div>`).join("")||"<p class='muted'>No records found.</p>"}</div>`;
-}
-function farmerTable(rows) {
-  const map = {};
-  rows.forEach(r => { const n = r.payload.farmer; if (n) map[n+"|"+r.cluster] = r; });
-  const list = Object.values(map);
-  return `<div class="card"><h3>Farmers</h3>${list.length?`<table><tr><th>Name</th><th>Cluster</th><th>Village</th><th>Crop</th></tr>${list.map(r=>`<tr><td>${r.payload.farmer}</td><td>${r.cluster}</td><td>${r.village||""}</td><td>${r.payload.crop||""}</td></tr>`).join("")}</table>`:"<p class='muted'>No records found.</p>"}</div>`;
-}
-function formView(rows) {
-  const opts = Object.keys(blocks).map(b => `<option value="${b}" ${b===me.cluster?"selected":""}>${b}</option>`).join("");
-  const teh = Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("");
-  return `<div class="card"><h3>New Application</h3>
-    <div class="grid">
-      <div><label>Scheme</label><select id="scheme"><option>Natural Farming Yield</option><option>Farmer Registration</option><option>Other</option></select></div>
-      <div><label>Cluster</label><select id="cluster" ${me.role==="admin"||me.role==="district_admin"?"":"disabled"}>${opts}</select></div>
-      <div><label>Tehsil</label><select id="fteh">${teh}</select></div>
-      <div><label>Gram Panchayat</label><select id="fgp"></select></div>
-      <div><label>Village</label><select id="village"></select></div>
-      <div><label>Farmer</label><input id="farmer" /></div>
-      <div><label>Father / Husband</label><input id="father" /></div>
-      <div><label>Mobile</label><input id="fmobile" /></div>
-      <div><label>Category</label><select id="category"><option>General</option><option>SC</option><option>ST</option><option>OBC</option></select></div>
-      <div><label>Crop</label><input id="crop" /></div>
-      <div><label>Kind</label><select id="kind"><option>अनाज</option><option>तिलहन</option><option>दलहन</option><option>अन्य</option></select></div>
-      <div><label>Area (ha)</label><input id="area" type="number" step="0.01" /></div>
-      <div><label>Yield type</label><select id="ytype"><option>अनुमानित</option><option>वास्तविक</option></select></div>
-      <div><label>Yield (q)</label><input id="yield" type="number" step="0.01" /></div>
-    </div>
-    <label>Photo</label><input id="photo" type="file" accept="image/*" />
-    <button class="go" id="save" style="margin-top:12px">Submit</button>
-  </div><div class="card"><h3>Information Forms</h3>${rows.length?table(rows):"<p class='muted'>No records found.</p>"}</div>`;
-}
-function gallery(rows) {
-  const pics = rows.flatMap(r => r.photos.map(p => `<div><img class="ph" src="/api/photos/${p.id}" /><div class="muted">${r.cluster} · ${r.payload.farmer||""}</div></div>`));
-  return `<div class="card"><h3>Photos</h3><div style="display:flex;flex-wrap:wrap">${pics.join("")||"<p class='muted'>No records found.</p>"}</div></div>`;
-}
-function reportView(rows) {
-  return `<div class="card"><h3>Reports</h3><p><a href="/api/export">Download consolidated Excel</a></p>${rows.map(r => `<div style="border-bottom:1px solid #eee;padding:8px 0"><b>${r.payload.farmer||r.form_type}</b> · ${r.cluster} · ${r.village||""} <span class="pill">${r.status}</span>
-    <div class="muted">${(r.history||[]).map(h=>h.status+" · "+h.at.slice(0,16)+" · "+(h.note||"")).join("<br>")}</div>
-    ${r.photos.map(p=>`<img class="ph" src="/api/photos/${p.id}"/>`).join("")}
-    ${me.role==="admin"?`<select id="st-${r.id}"><option value="">Status</option><option>correction_required</option><option>approved</option><option>resubmitted</option></select><button class="line" data-st="${r.id}">Save</button>`:""}
-  </div>`).join("")||"<p class='muted'>No records found.</p>"}</div>`;
-}
-function clusterView() {
-  if (me.role!=="admin" && me.role!=="district_admin") return `<div class="card"><h3>Clusters</h3>${Object.keys(blocks).join(", ")}</div>`;
-  const tehsilOpts = Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("");
-  return `<div class="card"><h3>Add cluster</h3>
-    <p class="muted">तहसील, ग्राम पंचायत और गाँव ड्रॉपडाउन से चुनें। चुने गाँव क्लस्टर में जुड़ जाएँगे।</p>
-    <div class="grid"><div><label>District</label><input id="cdist" value="अजमेर" readonly /></div>
-    <div><label>Tehsil</label><select id="cteh">${tehsilOpts}</select></div>
-    <div><label>Gram Panchayat</label><select id="cgp"></select></div>
-    <div><label>Cluster name</label><input id="cname" placeholder="क्लस्टर नाम" /></div></div>
-    <label>Villages</label><select id="cvills" multiple size="8"></select>
-    <button class="go" id="addc">Add cluster</button></div>
-    ${me.role==="admin"?`<div class="card"><h3>Map missing village</h3><p class="muted">System Admin जो गाँव जोड़ेगा वह ड्रॉपडाउन में आ जाएगा।</p>
-      <div class="grid"><div><label>Tehsil</label><select id="mteh">${tehsilOpts}</select></div>
-      <div><label>Gram Panchayat</label><select id="mgp"></select></div>
-      <div><label>New village</label><input id="mvill" /></div></div>
-      <button class="line" id="mapv">Add to dropdown</button></div>`:""}
-    <div class="card"><h3>Add village / gram panchayat</h3>
-    <label>Cluster</label><select id="pc">${Object.entries(blocks).map(([n,c])=>`<option value="${c.id}">${n}</option>`).join("")}</select>
-    <label>Village</label><input id="pv" /><label>Gram panchayat</label><input id="pg" />
-    <button class="go" id="addp">Add village</button></div>
-    <div class="card"><h3>Current clusters</h3>
-    ${Object.entries(blocks).map(([n,c])=>`<div style="margin:8px 0"><b>${c.district} · ${c.block} · ${n}</b> ${me.role==="admin"?`<button class="bad" data-dc="${c.id}">Delete cluster</button>`:""}
-      <div class="muted">${(c.places||[]).map(p=>p.village+" / "+p.gram_panchayat+(me.role==="admin"?` <button data-dp="${p.id}">x</button>`:"")).join(", ")||"no village"}</div></div>`).join("")}
-    </div>`;
-}
-function excelView() {
-  return `<div class="card"><h3>Excel Import / Export</h3><input id="xf" type="file" accept=".xlsx" /><button class="go" id="xu">Upload and check</button><div id="xr"></div><p><a href="/api/export">Cluster / consolidated export</a></p></div>`;
-}
-function logView(rows) {
-  const logs = rows.flatMap(r => (r.history||[]).map(h => ({...h, farmer:r.payload.farmer, cluster:r.cluster})));
-  return `<div class="card"><h3>Activity Log</h3>${logs.length?`<table><tr><th>Time</th><th>Status</th><th>By</th><th>Cluster</th><th>Note</th></tr>${logs.map(h=>`<tr><td>${h.at.slice(0,16)}</td><td>${h.status}</td><td>${h.by_name}</td><td>${h.cluster}</td><td>${h.note||""}</td></tr>`).join("")}</table>`:"<p class='muted'>No records found.</p>"}</div>`;
-}
-async function userView() {
-  const users = await api("/api/users");
-  const otps = await api("/api/otps");
-  return `<div class="card"><h3>New user</h3><div class="grid">
-    <div><label>Name</label><input id="nn" /></div><div><label>Role</label><select id="nr"><option value="district_admin">District Admin</option><option value="krishi_sakhi">Krishi Sakhi</option><option value="crp">CRP</option></select></div>
-    <div><label>Cluster</label><select id="nc">${Object.keys(blocks).map(b=>`<option>${b}</option>`).join("")}</select></div>
-    <div><label>Mobile</label><input id="nm" /></div>
-    <div><label>Username</label><input id="nu" /></div><div><label>Password</label><input id="np" /></div></div>
-    <button class="go" id="nuadd">Add user</button></div>
-    <div class="card"><h3>Users</h3>${users.filter(u=>u.active!==0).map(u=>`<div style="margin:6px 0">${u.name} · ${u.role} · ${u.cluster} · ${u.username} ${me.role==="admin" && u.id!==me.id?`<button class="bad" data-del="${u.id}">Delete</button>`:""}</div>`).join("")}</div>
-    <div class="card"><h3>Latest OTP</h3>${otps.map(o=>`<div>${o.username} · ${o.mobile} · ${o.code} · ${o.used?"used":"active"}</div>`).join("")||"<p class='muted'>No OTP yet</p>"}</div>
-    <div class="card"><h3>Reset password</h3><label>Username</label><input id="ru2" /><label>New password</label><input id="rp2" /><button class="go" id="doreset">Reset</button></div>`;
-}
-function fillVillages() {
-  const teh = document.getElementById("fteh");
-  const gp = document.getElementById("fgp");
-  const vill = document.getElementById("village");
-  if (!teh || !gp || !vill) return;
-  gp.innerHTML = Object.keys((window.LGD||{})[teh.value]||{}).map(g=>`<option>${g}</option>`).join("");
-  vill.innerHTML = (((window.LGD||{})[teh.value]||{})[gp.value]||[]).map(v=>`<option>${v}</option>`).join("");
-}
-function wire() {
+function wire(){
   fillVillages();
-  const c = document.getElementById("cluster");
-  if (c) c.onchange = fillVillages;
-  const save = document.getElementById("save");
-  if (save) save.onclick = async () => {
-    const payload = { application_no:"AJM-"+Date.now().toString().slice(-8), scheme:scheme.value, farmer:farmer.value, father:father.value, mobile:fmobile.value, category:category.value, tehsil:fteh.value, gp:fgp.value, crop:crop.value, kind:kind.value, area:area.value, yieldType:ytype.value, yield:yield.value };
-    if (!payload.farmer || !payload.crop) return alert("Farmer and crop are required");
-    const rec = await api("/api/records", { method:"POST", body: JSON.stringify({ cluster: cluster.value, village: village.value, form_type:"Information Form", payload }) });
-    const file = document.getElementById("photo").files[0];
-    if (file) { const fd = new FormData(); fd.append("photo", file); await api("/api/records/"+rec.id+"/photo", { method:"POST", body: fd }); }
-    alert("Submitted"); show("reports");
-  };
-  const xu = document.getElementById("xu");
-  if (xu) xu.onclick = async () => {
-    const fd = new FormData(); fd.append("file", document.getElementById("xf").files[0]);
-    const res = await api("/api/excel", { method:"POST", body: fd });
-    document.getElementById("xr").innerHTML = `<p>${res.saved} rows saved.</p>` + res.errors.map(e=>`<p style="color:#b91c1c">Row ${e.row}: ${e.detail}</p>`).join("");
-  };
-  document.querySelectorAll("[data-st]").forEach(b => b.onclick = async () => {
-    const status = b.dataset.s || (document.getElementById("st-"+b.dataset.st)||{}).value;
-    if (!status) return;
-    const noteEl = document.getElementById("rm-"+b.dataset.st);
-    const note = noteEl ? noteEl.value : "";
-    if ((status==="rejected" || status==="correction_required") && !note) return alert("Remark likhna zaroori hai");
-    await api("/api/records/"+b.dataset.st+"/status", { method:"POST", body: JSON.stringify({ status, note }) });
-    show("verify");
-  });
-  document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
-    if (!confirm("Delete this login?")) return;
-    await api("/api/users/"+b.dataset.del, { method:"DELETE" });
-    show("users");
-  });
-  const add = document.getElementById("nuadd");
-  if (add) add.onclick = async () => {
-    await api("/api/users", { method:"POST", body: JSON.stringify({ name:nn.value, role:nr.value, cluster:nc.value, mobile:nm.value, username:nu.value, password:np.value }) });
-    const msg = encodeURIComponent("Ajmer Agriculture Information\nhttps://ajmer-krishi.onrender.com\nUsername: "+nu.value+"\nPassword: "+np.value+"\nCluster: "+nc.value);
-    const phone = (nm.value||"").replace(/\D/g,"").slice(-10);
-    if (phone.length===10 && confirm("User ban gaya. WhatsApp me message kholen?")) window.open("https://wa.me/91"+phone+"?text="+msg);
-    show("users");
-  };
-  const fillGp = (tehId, gpId, villId, keepGp) => {
-    const teh = document.getElementById(tehId);
-    const gp = document.getElementById(gpId);
-    if (!teh || !gp) return;
-    const gps = Object.keys((window.LGD||{})[teh.value]||{});
-    const selected = keepGp ? gp.value : gps[0];
-    gp.innerHTML = gps.map(g=>`<option ${g===selected?"selected":""}>${g}</option>`).join("");
-    if (selected) gp.value = selected;
-    const vill = villId && document.getElementById(villId);
-    if (!vill) return;
-    const list = ((window.LGD||{})[teh.value]||{})[gp.value]||[];
-    vill.innerHTML = list.map(v=>`<option>${v}</option>`).join("");
-  };
-  if (document.getElementById("cteh")) {
-    fillGp("cteh","cgp","cvills", false);
-    document.getElementById("cteh").onchange = () => fillGp("cteh","cgp","cvills", false);
-    document.getElementById("cgp").onchange = () => fillGp("cteh","cgp","cvills", true);
-  }
-  if (document.getElementById("mteh")) {
-    fillGp("mteh","mgp", null, false);
-    document.getElementById("mteh").onchange = () => fillGp("mteh","mgp", null, false);
-    document.getElementById("mgp").onchange = () => fillGp("mteh","mgp", null, true);
-  }
-  const addc = document.getElementById("addc");
-  if (addc) addc.onclick = async () => {
-    await api("/api/clusters", { method:"POST", body: JSON.stringify({ district:cdist.value, block:cteh.value, name:cname.value }) });
-    const meta = await api("/api/meta");
-    const cid = meta[cname.value] && meta[cname.value].id;
-    const picked = [...document.getElementById("cvills").selectedOptions].map(o=>o.value);
-    if (cid) for (const v of picked) await api("/api/places", { method:"POST", body: JSON.stringify({ cluster_id:cid, village:v, gram_panchayat:cgp.value }) });
-    blocks = await api("/api/meta"); show("clusters");
-  };
-  const mapv = document.getElementById("mapv");
-  if (mapv) mapv.onclick = async () => {
-    await api("/api/directory/village", { method:"POST", body: JSON.stringify({ tehsil:mteh.value, gp:mgp.value, village:mvill.value }) });
-    window.LGD = (await api("/api/directory")).tree || {};
-    alert("Dropdown me aa gaya"); show("clusters");
-  };
-  const addp = document.getElementById("addp");
-  if (addp) addp.onclick = async () => { await api("/api/places", { method:"POST", body: JSON.stringify({ cluster_id:pc.value, village:pv.value, gram_panchayat:pg.value }) }); blocks = await api("/api/meta"); show("clusters"); };
-  document.querySelectorAll("[data-dc]").forEach(b => b.onclick = async () => { if (!confirm("Delete this cluster?")) return; await api("/api/clusters/"+b.dataset.dc, { method:"DELETE" }); blocks = await api("/api/meta"); show("clusters"); });
-  document.querySelectorAll("[data-dp]").forEach(b => b.onclick = async () => { await api("/api/places/"+b.dataset.dp, { method:"DELETE" }); blocks = await api("/api/meta"); show("clusters"); });
-  const dr = document.getElementById("doreset");
-  if (dr) dr.onclick = async () => { await api("/api/admin/reset", { method:"POST", body: JSON.stringify({ username:ru2.value, password:rp2.value }) }); alert("Password updated"); };
+  const teh=document.getElementById("fteh"); if(teh) teh.onchange=()=>fillVillages();
+  const gp=document.getElementById("fgp"); if(gp) gp.onchange=()=>fillVillages();
+  document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{ scheme=b.dataset.open; tab="Dashboard"; render(); });
+  const back=document.getElementById("back"); if(back) back.onclick=()=>{ scheme=null; tab="home"; render(); };
+  const fy=document.getElementById("fy"); if(fy) fy.onchange=()=>{ year=fy.value; show(tab); };
+  const sf=document.getElementById("saveFarmer"); if(sf) sf.onclick=async()=>{ await api("/api/records",{method:"POST", body:JSON.stringify({ cluster:me.cluster, village:village.value, form_type:"farmer_master", payload:{ farmer_id:"FMR"+Date.now().toString().slice(-6), farmer:farmer.value, father:father.value, mobile:fmobile.value, category:category.value, year }})}); show("farmers"); };
+  const sub=document.getElementById("submit"); if(sub) sub.onclick=()=>saveRecord("submitted");
+  const dr=document.getElementById("draft"); if(dr) dr.onclick=()=>saveRecord("draft");
+  document.querySelectorAll("[data-st]").forEach(b=>b.onclick=async()=>{ const note=(document.getElementById("rm-"+b.dataset.st)||{}).value||""; if((b.dataset.s==="rejected"||b.dataset.s==="correction_required")&&!note) return alert("Reason likhna zaroori hai"); await api("/api/records/"+b.dataset.st+"/status",{method:"POST", body:JSON.stringify({status:b.dataset.s, note})}); show("Verification"); });
+  const add=document.getElementById("nuadd"); if(add) add.onclick=async()=>{ await api("/api/users",{method:"POST", body:JSON.stringify({name:nn.value, role:nr.value, cluster:"All", mobile:nm.value, username:nu.value, password:np.value})}); show("users"); };
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ if(!confirm("Delete?")) return; await api("/api/users/"+b.dataset.del,{method:"DELETE"}); show("users"); });
 }
-function filterCards(el){ document.querySelectorAll('[data-q]').forEach(n=>n.style.display=n.dataset.q.toLowerCase().includes(el.value.toLowerCase())?'':'none'); }
-function bind() {
-  const go = document.getElementById("go");
-  if (go) {
-    go.onclick = async () => { try { await api("/api/login", { method:"POST", body: JSON.stringify({ username:u.value, password:p.value }) }); boot(); } catch(e){ err.textContent = e.message; } };
-    return;
-  }
-  document.getElementById("out").onclick = async () => { await api("/api/logout", { method:"POST" }); me=null; render(); };
-  document.querySelectorAll("aside button").forEach(b => b.onclick = () => show(b.dataset.t));
-  show(tab);
-}
+function filterCards(el){ document.querySelectorAll("[data-q]").forEach(n=>n.style.display=n.dataset.q.toLowerCase().includes(el.value.toLowerCase())?"":"none"); }
+function bind(){ const go=document.getElementById("go"); if(go){ go.onclick=async()=>{ try{ await api("/api/login",{method:"POST", body:JSON.stringify({username:u.value,password:p.value})}); boot(); }catch(e){ err.textContent=e.message; } }; return; } document.getElementById("out").onclick=async()=>{ await api("/api/logout",{method:"POST"}); me=null; scheme=null; render(); }; document.querySelectorAll("aside button[data-t]").forEach(b=>b.onclick=()=>show(b.dataset.t)); show(scheme?tab:"home"); }
 boot();
 </script>
 </body>
