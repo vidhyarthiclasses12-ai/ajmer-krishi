@@ -593,12 +593,12 @@ def norm(v):
 
 
 TEMPLATES = {
-  "pkvy": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Season","Khasra No.","Land Area","PKVY Area","Crop","Variety","Activity","Activity Area","Input","Input Quantity","Input Unit","Activity Date","Remarks","Status"],
-  "natural": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Season","Khasra No.","Natural Farming Area","Crop","Variety","Practice","Practice Area","Input Type","Input Name","Input Quantity","Unit","Training Status","Training Date","Production","Production Unit","Remarks","Status"],
-  "minikit": ["Farmer ID","Farmer Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Financial Year","Scheme","Component","Distribution Date","Crop","Variety","Item Type","Item Name","Batch/Lot No.","Quantity","Unit","Distribution Location","Receiver Confirmation","Verification Status","Remarks"],
-  "demo": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety","Technology","Intervention","Input","Input Quantity","Sowing Date","Harvest Date","Expected Yield","Demonstration Yield","Farmer Practice Yield","Yield Unit","Result","Remarks","Status"],
+  "pkvy": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety"],
+  "natural": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety"],
+  "minikit": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety"],
+  "demo": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety"],
 }
-REQUIRED_BY = {k: ["Farmer Name","Village"] for k in TEMPLATES}
+REQUIRED_BY = {k: ["Farmer Name","Village","Mobile"] for k in TEMPLATES}
 
 @app.get("/api/template")
 @login_required
