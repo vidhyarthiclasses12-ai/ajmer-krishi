@@ -808,9 +808,9 @@ def workflow(rid):
         return jsonify({"error": "Invalid action"}), 400
     con.execute("UPDATE records SET status=? WHERE id=?", (new, rid))
     add_history(con, rid, new, note or action, u["name"])
+    audit(con, u, action, "record", rid, new)
     con.commit()
     con.close()
-    audit(con, u, action, "record", rid, new)
     return jsonify({"ok": True, "status": new})
 
 @app.post("/api/revert")
@@ -829,7 +829,7 @@ def revert():
     n = 0
     for r in rows:
         pld = json.loads(r["payload"] or "{}")
-        if pld.get("cluster") == cid or pld.get("PKVYClusterID") == cid:
+        if cid in (pld.get("cluster"), pld.get("PKVYClusterID"), pld.get("Cluster ID"), r["id"]):
             con.execute("UPDATE records SET status='returned' WHERE id=?", (r["id"],))
             add_history(con, r["id"], "returned", note, u["name"])
             n += 1
