@@ -799,7 +799,7 @@ def error_xlsx(eid):
     return send_file(path, as_attachment=True, download_name="error-rows.xlsx")
 
 WORKFLOW = ["submitted", "supervisor_signed", "aao_approved"]
-NEXT_ROLE = {"submitted": "supervisor", "supervisor_signed": "aao"}
+NEXT_ROLE = {"submitted": "supervisor", "supervisor_signed": "aao", "signed": "aao"}
 
 @app.post("/api/workflow/<rid>")
 @login_required
@@ -822,11 +822,18 @@ def workflow(rid):
     elif action == "sign":
         actor = data.get("actor") if u["role"] == "admin" and data.get("actor") in ("supervisor", "aao") else u["role"]
         stage = "submitted" if status in ("returned", "correction_required", "corrected", "draft") else status
+        if stage == "signed":
+            stage = "supervisor_signed"
         expect = NEXT_ROLE.get(stage)
-        if actor not in ("admin", expect or ""):
+        if actor not in ("admin", expect or "") and not (u["role"] == "admin" and stage in ("submitted", "supervisor_signed")):
             con.close()
             return jsonify({"error": "You cannot sign at this stage"}), 403
-        new = {"supervisor": "supervisor_signed", "aao": "aao_approved"}.get(actor, "signed")
+        if stage in ("submitted", "draft"):
+            new = "supervisor_signed"
+        elif stage == "supervisor_signed":
+            new = "aao_approved"
+        else:
+            new = "signed"
     else:
         con.close()
         return jsonify({"error": "Invalid action"}), 400
