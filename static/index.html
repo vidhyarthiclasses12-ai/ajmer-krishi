@@ -35,10 +35,10 @@
 <script>
 let me=null, blocks={}, scheme=null, tab="home", year="2026-27";
 const SCHEMES={
-  pkvy:{title:"PKVY", full:"Paramparagat Krishi Vikas Yojana", menu:["Dashboard","Cluster","Farmer","Activity","Verification","Reports"]},
-  natural:{title:"Natural Farming", full:"प्राकृतिक खेती", menu:["Dashboard","Farmer","Activity","Field Visit","Verification","Reports"]},
-  minikit:{title:"Minikit", full:"Minikit Distribution", menu:["Dashboard","Stock","Beneficiary","Distribution","Verification","Reports"]},
-  demo:{title:"Demonstration", full:"फसल/तकनीकी प्रदर्शन", menu:["Dashboard","Planning","Field","Visit","Verification","Reports"]}
+  pkvy:{title:"PKVY", full:"25 farmer, total 20 hectare", menu:["Dashboard","Farmer","Bulk Upload","Complete","Reports"]},
+  natural:{title:"Natural Farming", full:"125 farmer, 1 acre each", menu:["Dashboard","Farmer","Bulk Upload","Complete","Reports"]},
+  minikit:{title:"Minikit", full:"No farmer limit", menu:["Dashboard","Farmer","Bulk Upload","Complete","Reports"]},
+  demo:{title:"Demonstration", full:"No farmer limit", menu:["Dashboard","Farmer","Bulk Upload","Complete","Reports"]}
 };
 async function api(url, opt={}) {
   const res = await fetch(url, { credentials:"same-origin", headers: opt.body instanceof FormData ? undefined : { "Content-Type":"application/json" }, ...opt });
@@ -53,7 +53,7 @@ function shell(){
   const items = scheme? SCHEMES[scheme].menu.map(m=>[m,m]) : [["home","Dashboard"],["farmers","Farmer Master"],["users","Users & Roles"],["masters","Master Data"],["excel","Excel"],["log","Audit Log"],["settings","Settings"]];
   return `<div class="app"><aside><b>KRISHI WEB APP</b>${items.map(([id,label])=>`<button data-t="${id}" class="${tab===id?"active":""}">${label}</button>`).join("")}${scheme?`<button id="back">Main Dashboard</button>`:""}</aside>
   <main><header><div><b>Ajmer Agriculture Information</b><div style="font-size:12px;color:#6b7280">${scheme?SCHEMES[scheme].full:"Department of Agriculture"} · FY ${year}</div></div>
-  <span><select id="fy"><option>2025-26</option><option selected>2026-27</option><option>2027-28</option></select> ${me.name} · ${me.role} <button id="out" class="line">Logout</button></span></header>
+  <span>${me.role==="admin"?`<select id="viewAs"><option value="">Test role</option><option>admin</option><option>district_admin</option><option>aao</option><option>supervisor</option><option>lrp</option><option>crp</option><option>krishi_sakhi</option></select>`:""}<select id="fy"><option>2025-26</option><option selected>2026-27</option><option>2027-28</option></select> ${me.name} · ${me.role} <button id="out" class="line">Logout</button></span></header>
   <div class="content" id="panel"></div></main></div>`;
 }
 async function show(name){
@@ -66,11 +66,12 @@ async function show(name){
   else if(name==="farmers"||name==="Farmer") panel.innerHTML=farmerMaster(farmers);
   else if(name==="users"||name==="Users & Roles") panel.innerHTML=await userView();
   else if(name==="masters"||name==="Master Data") panel.innerHTML=clusterView(await api("/api/users"));
-  else if(name==="excel"||name==="Excel") panel.innerHTML=excelView();
+  else if(name==="Bulk Upload") panel.innerHTML=excelView();
+  else if(name==="Complete") panel.innerHTML=(me.role==="supervisor"||me.role==="aao"||me.role==="admin")?verifyView(mine):`<div class="card">Complete aur verification sirf Supervisor aur Assistant Agriculture Officer ke liye hai.</div>`;
   else if(name==="log"||name==="Audit Log") panel.innerHTML=logView(rows);
   else if(name==="settings"||name==="Settings") panel.innerHTML=`<div class="card"><h3>Settings</h3><p>Financial year upar se badlega. Purana saal ka data delete nahi hota.</p></div>`;
   else if(name==="Dashboard") panel.innerHTML=schemeDash(mine);
-  else if(name==="Verification") panel.innerHTML=verifyView(mine);
+  else if(name==="Reports") panel.innerHTML=reportView(mine);
   else if(name==="Reports") panel.innerHTML=reportView(mine);
   else panel.innerHTML=schemeForm(name, mine);
   wire();
@@ -100,7 +101,7 @@ function lgdSelects(){
   const teh=Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("");
   return `<div><label>Tehsil</label><select id="fteh">${teh}</select></div><div><label>Gram Panchayat</label><select id="fgp"></select></div><div><label>Village</label><select id="village"></select></div>`;
 }
-function farmerMaster(rows){
+function farmerMaster(rows){ rows=scheme?rows.filter(r=>(r.payload.scheme||scheme)===scheme):rows;
   return `<div class="card"><h3>Farmer Master</h3><p>Ek baar register, phir har scheme me search karke jodein.</p><div class="grid"><div><label>Name</label><input id="farmer"/></div><div><label>Father/Husband</label><input id="father"/></div><div><label>Mobile</label><input id="fmobile"/></div><div><label>Jan Aadhaar</label><input id="jan" placeholder="list me masked dikhega"/></div><div><label>Category</label><select id="category"><option>General</option><option>SC</option><option>ST</option><option>OBC</option></select></div>${lgdSelects()}<div><label>Land area</label><input id="area"/></div></div><button class="go" id="saveFarmer">Save farmer</button></div>
   <div class="card"><input id="q" placeholder="Search name / mobile" oninput="filterCards(this)"/><table><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Village</th></tr>${rows.map(r=>`<tr data-q="${r.payload.farmer} ${r.payload.mobile}"><td>${r.payload.farmer_id||r.id.slice(0,8)}</td><td>${r.payload.farmer}</td><td>${r.payload.mobile||""}</td><td>${(r.payload.jan||"").length>4?"XXXX"+r.payload.jan.slice(-4):""}</td><td>${r.village||""}</td></tr>`).join("")}</table></div>`;
 }
@@ -122,7 +123,15 @@ function verifyView(rows){
   return `<div class="card"><h3>Workflow · ${me.role}</h3><p class="muted">LRP sign → CRP sign → Krishi Sakhi sign → Supervisor approve → District process</p>${mine.map(r=>`<div style="border-bottom:1px solid #eee;padding:8px 0"><b>${r.payload.application_no||r.id.slice(0,6)}</b> ${r.payload.farmer||""} <span class="pill">${r.status}</span><label>Remark</label><input id="rm-${r.id}"/><button class="go" data-wf="${r.id}" data-a="sign">Sign & submit</button> <button class="line" data-wf="${r.id}" data-a="return">Return</button></div>`).join("")||"<p>Is role par pending nahi</p>"}</div>`;
 }
 function reportView(rows){
-  return `<div class="card"><h3>${SCHEMES[scheme].title} Reports · ${year}</h3><p><a href="/api/export">Export Excel</a></p><table><tr><th>No</th><th>Section</th><th>Farmer</th><th>Status</th></tr>${rows.map(r=>`<tr><td>${r.payload.application_no||""}</td><td>${r.payload.section||""}</td><td>${r.payload.farmer||""}</td><td>${r.status}</td></tr>`).join("")}</table></div>`;
+  const ready=rows.filter(r=>r.status==="aao_approved"||me.role==="admin");
+  return `<div class="card"><h3>${SCHEMES[scheme].title} Report</h3>
+    <label>Format</label><select id="fmt"><option>Farmer list</option><option>Activity</option><option>Cluster</option><option>Signed summary</option></select>
+    <label><input type="checkbox" id="mask" checked/> Mask Jan Aadhaar</label>
+    <button class="go" id="doPdf">Generate PDF</button> <a href="/api/export">Export Excel</a>
+    <div id="pdfBox"></div>
+    <table><tr><th>Cluster</th><th>Farmer</th><th>Status</th><th>Jan</th></tr>${ready.map(r=>`<tr><td>${r.payload.PKVYClusterID||r.cluster||""}</td><td>${r.payload.farmer||r.payload.FarmerName||""}</td><td>${r.status}</td><td>${(r.payload.jan||"").length>4?"XXXX"+r.payload.jan.slice(-4):""}</td></tr>`).join("")}</table>
+    ${me.role==="district_admin"||me.role==="admin"?`<h3>Revert signed report</h3><input id="revC" placeholder="Cluster ID"/><input id="revR" placeholder="Reason"/><button class="line" id="rev">Revert</button>`:""}
+  </div>`;
 }
 function clusterView(users=[]){
   const tehs = Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("");
@@ -136,11 +145,15 @@ function clusterView(users=[]){
 }
 function excelView(){ const key=scheme||"pkvy"; return `<div class="card"><h3>${scheme?SCHEMES[scheme].title:"Scheme"} Excel</h3><p><a href="/api/template?scheme=${key}">Download ${key} template</a></p><input id="xf" type="file" accept=".xlsx,.jpg,.jpeg,.png"/><button class="go" id="xu">Upload Excel</button><div id="xr"></div><p>Photo alag se form me camera/gallery se lagegi.</p></div>`; }
 function logView(rows){ const logs=rows.flatMap(r=>(r.history||[]).map(h=>`<tr><td>${h.at.slice(0,16)}</td><td>${h.by_name}</td><td>${h.status}</td><td>${h.note||""}</td></tr>`)); return `<div class="card"><h3>Audit Log</h3><table><tr><th>Time</th><th>User</th><th>Status</th><th>Remark</th></tr>${logs.join("")}</table></div>`; }
-async function userView(){ if(me.role!=="admin"&&me.role!=="district_admin") return `<div class="card">Users System Admin aur District Admin dekh sakte hain.</div>`; const users=await api("/api/users"); return `<div class="card"><h3>New user</h3><div class="grid"><div><label>Name</label><input id="nn"/></div><div><label>Role</label><select id="nr">${me.role==="admin"?'<option value="district_admin">District Admin</option>':''}<option value="supervisor">Agriculture Supervisor</option><option value="lrp">LRP · PKVY</option><option value="krishi_sakhi">Krishi Sakhi · Natural Farming</option><option value="crp">CRP · Natural Farming</option></select></div><div id="clusterBox"><label>Mapped cluster</label><select id="ncl"></select></div><div id="postBox"><label>Post</label><input id="npost" placeholder="Agriculture Research Officer"/></div><div><label>Mobile</label><input id="nm"/></div><div><label>Username</label><input id="nu"/></div><div><label>Password</label><input id="np"/></div></div><div id="supGpBox"><label>Supervisor GP assign</label><div class="grid"><div><label>Tehsil</label><select id="nteh">${Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("")}</select></div><div><label>Gram Panchayat</label><select id="ngp"></select></div></div></div><button class="go" id="nuadd">Add</button><div>${users.filter(u=>u.active!==0).map(u=>`<div>${u.name} · ${u.role} · ${u.username} ${me.role==="admin"&&u.id!==me.id?`<button class="bad" data-del="${u.id}">Delete</button>`:""}</div>`).join("")}</div></div>`; }
+async function userView(){ if(me.role!=="admin"&&me.role!=="district_admin") return `<div class="card">Users System Admin aur District Admin dekh sakte hain.</div>`; const users=await api("/api/users"); return `<div class="card"><h3>New user</h3><div class="grid"><div><label>Name</label><input id="nn"/></div><div><label>Role</label><select id="nr">${me.role==="admin"?'<option value="district_admin">District Admin</option>':''}<option value="aao">Assistant Agriculture Officer</option><option value="supervisor">Agriculture Supervisor</option><option value="lrp">LRP · PKVY</option><option value="krishi_sakhi">Krishi Sakhi · Natural Farming</option><option value="crp">CRP · Natural Farming</option></select></div><div id="clusterBox"><label>Mapped cluster</label><select id="ncl"></select></div><div id="postBox"><label>Post</label><input id="npost" placeholder="Agriculture Research Officer"/></div><div><label>Mobile</label><input id="nm"/></div><div><label>Username</label><input id="nu"/></div><div><label>Password</label><input id="np"/></div></div><div id="supGpBox"><label>Supervisor GP assign</label><div class="grid"><div><label>Tehsil</label><select id="nteh">${Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("")}</select></div><div><label>Gram Panchayat</label><select id="ngp"></select></div></div></div><button class="go" id="nuadd">Add</button><div>${users.filter(u=>u.active!==0).map(u=>`<div>${u.name} · ${u.role} · ${u.username} ${me.role==="admin"&&u.id!==me.id?`<button class="bad" data-del="${u.id}">Delete</button>`:""}</div>`).join("")}</div></div>`; }
 function fillVillages(){ const teh=document.getElementById("fteh"), gp=document.getElementById("fgp"), vill=document.getElementById("village"); if(!teh||!gp||!vill) return; const keep=gp.value; gp.innerHTML=Object.keys((window.LGD||{})[teh.value]||{}).map(g=>`<option ${g===keep?"selected":""}>${g}</option>`).join(""); vill.innerHTML=(((window.LGD||{})[teh.value]||{})[gp.value]||[]).map(v=>`<option>${v}</option>`).join(""); }
 async function saveRecord(status){
   const payload={ scheme, year, section:tab, application_no:(scheme||"GEN").toUpperCase()+"-"+Date.now().toString().slice(-8), farmer: (document.getElementById("farmer")||{}).value || (document.getElementById("searchFarmer")||{}).value, status };
   document.querySelectorAll("[id^='f-']").forEach(el=>payload[el.id.slice(2)]=el.value);
+  const all=await api("/api/records");
+  const same=all.filter(r=>(r.payload.scheme||r.form_type)===scheme && (r.payload.PKVYClusterID||r.cluster)=== (payload.PKVYClusterID||me.cluster));
+  if(scheme==="pkvy" && same.length>=25) return alert("PKVY cluster me 25 farmer se zyada nahi");
+  if(scheme==="natural" && same.length>=125) return alert("Natural Farming cluster me 125 farmer se zyada nahi");
   const rec=await api("/api/records",{method:"POST", body:JSON.stringify({ cluster:me.cluster, village:(document.getElementById("village")||{}).value||"", form_type:scheme||"common", payload })});
   const area=Number(payload.PKVYArea||payload.NaturalFarmingArea||payload.DemonstrationArea||payload.CropArea||0);
   const land=Number(payload.TotalLandArea||0);
@@ -157,6 +170,9 @@ function wire(){
   document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{ scheme=b.dataset.open; tab="Dashboard"; render(); });
   const back=document.getElementById("back"); if(back) back.onclick=()=>{ scheme=null; tab="home"; render(); };
   const fy=document.getElementById("fy"); if(fy) fy.onchange=()=>{ year=fy.value; show(tab); };
+  const viewAs=document.getElementById("viewAs"); if(viewAs) viewAs.onchange=()=>{ me.role=viewAs.value||"admin"; render(); };
+  const doPdf=document.getElementById("doPdf"); if(doPdf) doPdf.onclick=()=>{ const mask=document.getElementById("mask").checked; const w=window.open(""); w.document.write("<h2>"+SCHEMES[scheme].title+" signed report</h2><p>Jan Aadhaar "+(mask?"masked":"full")+"</p>"); w.print(); };
+  const rev=document.getElementById("rev"); if(rev) rev.onclick=async()=>{ try{ const r=await api("/api/revert",{method:"POST", body:JSON.stringify({cluster:revC.value, reason:revR.value})}); alert(r.count+" records wapas bheje"); }catch(e){ alert(e.message);} };
   const sf=document.getElementById("saveFarmer"); if(sf) sf.onclick=async()=>{ await api("/api/records",{method:"POST", body:JSON.stringify({ cluster:me.cluster, village:village.value, form_type:"farmer_master", payload:{ farmer_id:"FRM-2026-"+Date.now().toString().slice(-6), farmer:farmer.value, father:father.value, mobile:fmobile.value, category:category.value, jan: (document.getElementById("jan")||{}).value||"", year }})}); show("farmers"); };
   const loadF=document.getElementById("loadFarmer"); if(loadF) loadF.onclick=async()=>{ const rows=await api("/api/records"); const q=(searchFarmer.value||"").toLowerCase(); const f=rows.find(r=>r.form_type==="farmer_master" && ((r.payload.farmer_id||"")+(r.payload.farmer||"")+(r.payload.mobile||"")).toLowerCase().includes(q)); if(!f) return alert("Farmer master me nahi mila"); document.getElementById("masterBox").textContent="Loaded "+f.payload.farmer_id+" · "+f.payload.farmer+" · "+(f.payload.father||"")+" · "+(f.village||""); searchFarmer.value=f.payload.farmer_id; };
   const sub=document.getElementById("submit"); if(sub) sub.onclick=()=>saveRecord("submitted");
@@ -186,7 +202,7 @@ function wire(){
       const role=document.getElementById("nr").value;
       const clusterEl=document.getElementById("ncl");
       const cluster=clusterEl&&clusterEl.value&&!clusterEl.value.startsWith("Pehle")?clusterEl.value:"All";
-      if((role==="lrp"||role==="krishi_sakhi"||role==="crp") && cluster==="All") return alert("Pehle PKVY ya Natural Farming me cluster map karein");
+      if((role==="lrp"||role==="krishi_sakhi"||role==="crp"||role==="supervisor") && cluster==="All") return alert("Pehle cluster map karein");
       await api("/api/users",{method:"POST", body:JSON.stringify({name:document.getElementById("nn").value, role, cluster, mobile:document.getElementById("nm").value, username:document.getElementById("nu").value, password:document.getElementById("np").value})});
       if(role==="supervisor"){ const r=await api("/api/map/gp",{method:"POST", body:JSON.stringify({username:document.getElementById("nu").value, tehsil:document.getElementById("nteh").value, gp:document.getElementById("ngp").value})}); alert("GP aur cluster assign: "+r.cluster); }
       else alert("User ban gaya");
