@@ -119,7 +119,7 @@ function schemeForm(name, rows){
 }
 function verifyView(rows){
   const mine=rows.filter(r=>{
-    if(me.role==="aao") return r.status==="supervisor_signed";
+    if(me.role==="aao") return r.status==="supervisor_signed" || r.status==="signed";
     if(me.role==="supervisor") return r.status==="submitted"||r.status==="draft"||r.status==="returned";
     return true;
   });
@@ -192,7 +192,7 @@ function wire(){
   document.querySelectorAll("canvas[id^=sig-]").forEach(c=>{ const ctx=c.getContext("2d"); let draw=false; c.onpointerdown=e=>{ draw=true; ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY); }; c.onpointermove=e=>{ if(!draw) return; ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke(); }; c.onpointerup=()=>draw=false; });
   document.querySelectorAll("[data-clear]").forEach(b=>b.onclick=()=>{ const c=document.getElementById("sig-"+b.dataset.clear); c.getContext("2d").clearRect(0,0,c.width,c.height); });
   document.querySelectorAll("[data-wf]").forEach(b=>b.onclick=async()=>{ try{ const note=(document.getElementById("rm-"+b.dataset.wf)||{}).value||""; if(b.dataset.a==="return"&&!note) return alert("Reason likhna zaroori hai"); const canvas=document.getElementById("sig-"+b.dataset.wf); const file=(document.getElementById("sigf-"+b.dataset.wf)||{}).files; if(b.dataset.a==="sign" && canvas && !file?.[0]){ const blank=document.createElement("canvas"); blank.width=canvas.width; blank.height=canvas.height; if(canvas.toDataURL()===blank.toDataURL()) return alert("Pehle sign banayein ya photo upload karein"); }
-    await api("/api/workflow/"+b.dataset.wf,{method:"POST", body:JSON.stringify({action:b.dataset.a, note, signature:canvas?canvas.toDataURL():""})}); alert("Sign save ho gaya"); show("Complete"); }catch(e){ alert(e.message);} });
+    await api("/api/workflow/"+b.dataset.wf,{method:"POST", body:JSON.stringify({action:b.dataset.a, note, actor:me.role, signature:canvas?canvas.toDataURL():""})}); alert("Sign save ho gaya"); show("Complete"); }catch(e){ alert(e.message);} });
   const fillMap=()=>{ const t=document.getElementById("mteh"), g=document.getElementById("mgp"); if(!t||!g) return; const keep=g.value; g.innerHTML=Object.keys((window.LGD||{})[t.value]||{}).map(x=>`<option ${x===keep?"selected":""}>${x}</option>`).join(""); };
   if(document.getElementById("mteh")){ fillMap(); document.getElementById("mteh").onchange=fillMap; document.getElementById("mgp").onchange=fillMap; }
   const mapCluster=document.getElementById("mapCluster");
