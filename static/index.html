@@ -46,7 +46,7 @@ async function api(url, opt={}) {
   if (!res.ok) throw new Error(data.error||"Error");
   return data;
 }
-async function boot(){ me=await fetch("/api/me").then(r=>r.json()); if(me){ realRole=me.role; blocks=await api("/api/meta"); window.LGD=(await api("/api/directory")).tree||{}; } render(); }
+async function boot(){ try{ me=await fetch("/api/me").then(r=>r.json()); if(me){ realRole=me.role; blocks=await api("/api/meta"); try{ window.LGD=(await api("/api/directory")).tree||{}; }catch(e){ window.LGD={}; } } }catch(e){ me=null; } render(); }
 function render(){ document.getElementById("app").innerHTML = me? shell(): login(); bind(); }
 function login(){ return `<div class="card login"><h2 style="color:#166534">Ajmer Agriculture Information</h2><label>Username</label><input id="u"/><label>Password</label><input id="p" type="password"/><p id="err" style="color:#b91c1c"></p><button class="go" id="go" style="width:100%">Login</button><p style="font-size:12px;color:#6b7280">Help: District Agriculture Office, Ajmer · Version 1.0</p></div>`; }
 function shell(){
