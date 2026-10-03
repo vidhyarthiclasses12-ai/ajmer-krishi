@@ -41,7 +41,7 @@ const SCHEMES={
   demo:{title:"Demonstration", full:"No farmer limit", menu:["Dashboard","Farmer","Bulk Upload","Complete","Reports"]}
 };
 async function api(url, opt={}) {
-  const res = await fetch(url, { credentials:"same-origin", headers: opt.body instanceof FormData ? undefined : { "Content-Type":"application/json" }, ...opt });
+  const res = await fetch(url, { credentials:"same-origin", ...opt, headers: opt.body instanceof FormData ? undefined : { "Content-Type":"application/json", ...(opt.headers||{}) } });
   const data = await res.json().catch(()=>({}));
   if (!res.ok) throw new Error(data.error||"Error");
   return data;
@@ -197,6 +197,18 @@ function wire(){
   if(mapGp) mapGp.onclick=async()=>{ const r=await api("/api/map/gp",{method:"POST", body:JSON.stringify({username:supUser.value, tehsil:steh.value, gp:sgp.value})}); alert("Cluster auto add: "+r.cluster); blocks=await api("/api/meta"); };
   const mapv=document.getElementById("mapv");
   if(mapv) mapv.onclick=async()=>{ await api("/api/directory/village",{method:"POST", body:JSON.stringify({tehsil:mteh.value, gp:mgp.value, village:mvill.value})}); window.LGD=(await api("/api/directory")).tree||{}; alert("Dropdown me aa gaya"); show("masters"); };
+  const xu=document.getElementById("xu");
+  if(xu) xu.onclick=async()=>{
+    try{
+      const file=document.getElementById("xf").files[0];
+      if(!file) return alert("Pehle Excel file chunein");
+      const fd=new FormData();
+      fd.append("file", file);
+      fd.append("scheme", scheme||"pkvy");
+      const res=await api("/api/excel",{method:"POST", body:fd});
+      document.getElementById("xr").innerHTML=`<p>${res.saved||0} saved. Invalid ${(res.errors||[]).length}</p>`+(res.errors||[]).map(e=>`<p style="color:#b91c1c">Row ${e.row}: ${e.detail}</p>`).join("")+(res.error_file?`<p><a href="/api/errors/${res.error_file}">Download error Excel</a></p>`:"");
+    }catch(e){ alert(e.message); }
+  };
   const add=document.getElementById("nuadd"); if(add) add.onclick=async()=>{
     try {
       const role=document.getElementById("nr").value;
