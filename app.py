@@ -615,6 +615,26 @@ def photo(pid):
         return jsonify({"error": "नहीं"}), 404
     return send_from_directory(UPLOAD, row["filename"])
 
+@app.post("/api/records/<rid>/edit")
+@login_required
+def edit_record(rid):
+    u = current()
+    data = request.json or {}
+    con = db()
+    rec = con.execute("SELECT * FROM records WHERE id=?", (rid,)).fetchone()
+    if not rec:
+        con.close()
+        return jsonify({"error": "Record not found"}), 404
+    if rec["status"] not in ("submitted", "draft", "returned", "correction_required"):
+        con.close()
+        return jsonify({"error": "Signed record cannot be edited. Ask District Admin to revert it."}), 400
+    payload = json.loads(rec["payload"] or "{}")
+    payload.update(data.get("payload") or {})
+    con.execute("UPDATE records SET payload=?, village=? WHERE id=?", (json.dumps(payload, ensure_ascii=False), payload.get("Village") or rec["village"], rid))
+    add_history(con, rid, "corrected", "Edited before sign", u["name"])
+    con.commit(); con.close()
+    return jsonify({"ok": True})
+
 @app.post("/api/records/<rid>/status")
 @admin_required
 def set_status(rid):
