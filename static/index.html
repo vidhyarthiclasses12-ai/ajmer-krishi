@@ -105,19 +105,16 @@ function farmerMaster(rows){
   <div class="card"><input id="q" placeholder="Search name / mobile" oninput="filterCards(this)"/><table><tr><th>ID</th><th>Name</th><th>Mobile</th><th>Village</th></tr>${rows.map(r=>`<tr data-q="${r.payload.farmer} ${r.payload.mobile}"><td>${r.payload.farmer_id||r.id.slice(0,8)}</td><td>${r.payload.farmer}</td><td>${r.payload.mobile||""}</td><td>${(r.payload.jan||"").length>4?"XXXX"+r.payload.jan.slice(-4):""}</td><td>${r.village||""}</td></tr>`).join("")}</table></div>`;
 }
 function schemeForm(name, rows){
-  const fields={
-    Cluster:["Cluster name","Area","Coordinator","Activity"],
-    Activity:["Activity","Crop","Quantity","Unit","Cost"],
-    Stock:["Crop","Variety","Lot","Quantity received","Challan"],
-    Beneficiary:["Farmer ID","Crop","Variety","Kit type","Quantity"],
-    Distribution:["Farmer ID","Lot","Quantity","Distribution date","Location"],
-    Planning:["Crop","Variety","Target farmers","Target area","Proposed date"],
-    Field:["Farmer ID","Khasra","Area","Crop","Technology"],
-    Visit:["Visit date","Officer","Observation","Advice","Result"],
-    "Field Visit":["Visit date","Officer","Crop","Observation","Advice"]
-  }[name]||["Farmer ID","Crop","Area","Remarks"];
-  return `<div class="card"><h3>${SCHEMES[scheme].title} · ${name}</h3><label>Search farmer master</label><input id="searchFarmer" placeholder="Farmer ID / mobile / name"/><button type="button" class="line" id="loadFarmer">Load master</button><p id="masterBox" class="muted"></p><div class="grid">${lgdSelects()}${fields.map(f=>`<div><label>${f}</label><input id="f-${f.replace(/\\s/g,"")}"/></div>`).join("")}</div><label>Photo</label><input id="photo" type="file" accept="image/*" capture="environment"/><button class="line" id="draft">Save draft</button> <button class="go" id="submit">Submit</button></div>
-  <div class="card">${rows.filter(r=>r.payload.section===name).map(r=>`<div>${r.payload.application_no} · ${r.payload.farmer||r.payload.section} <span class="pill">${r.status}</span></div>`).join("")||"No records"}</div>`;
+  const common = ["Farmer ID","Farmer Name","Father/Husband Name","Gender","Category","Mobile","Jan Aadhaar","District","Tehsil","Block","Gram Panchayat","Village","Total Land Area"];
+  const extra = {
+    pkvy:["Financial Year","Season","PKVY Cluster ID","Registration Date","Participation Status","Existing/New","Khasra No","Cultivated Area","PKVY Area","Land Ownership","Soil Test","Crop","Variety","Crop Area","Activity","Activity Area","Remarks"],
+    natural:["Financial Year","Season","Cluster ID","Adoption Status","Existing/New","Khasra No","Natural Farming Area","Practice","Practice Area","Crop","Variety","Input Name","Input Quantity","Training Attended","Training Date","Remarks"],
+    minikit:["Financial Year","Component","Distribution Date","Distribution Location","Crop","Variety","Item Name","Lot/Batch No","Quantity","Unit","Receiver Confirmation"],
+    demo:["Financial Year","Demonstration Type","Category","Season","Demonstration Date","Location","Khasra No","Demonstration Area","Crop","Variety","Technology","Intervention","Expected Yield","Demonstration Yield","Result"]
+  }[scheme]||[];
+  const opts = {Season:["Kharif","Rabi","Zaid"], "Land Ownership":["Owner","Lease"], "Soil Test":["No","Yes"], "Existing/New":["Existing","New"], "Participation Status":["Active","Inactive"], "Adoption Status":["Adopted","Partial","Not adopted"], Practice:["Beejamrit","Jeevamrit","Ghan Jeevamrit","Mulching","Waaphasa","Intercropping","Other"], Unit:["Kg","Gram","Litre","Packet"], Component:["Seed","Nutrient","Other"], "Demonstration Type":["Crop","Technology","Input"], Category:["Frontline","Cluster"], "Receiver Confirmation":["Yes","No"]};
+  const field=(label, ro)=>`<div><label>${label}</label>${opts[label]?`<select id="f-${label.replace(/[^a-zA-Z]/g,"")}" ${ro}>${opts[label].map(o=>`<option>${o}</option>`).join("")}</select>`:`<input id="f-${label.replace(/[^a-zA-Z]/g,"")}" ${ro?"readonly":""}/>`}</div>`;
+  return `<div class="card"><h3>${SCHEMES[scheme].title} · ${name}</h3><label>Farmer ID search</label><input id="searchFarmer" placeholder="FRM-2026"/><button type="button" class="line" id="loadFarmer">Load master</button><p id="masterBox" class="muted"></p><div class="grid">${common.map(f=>field(f,true)).join("")}${extra.map(f=>field(f,false)).join("")}</div><p id="cond"></p><label>Photo</label><input id="photo" type="file" accept="image/*" capture="environment"/><button class="line" id="draft">Save draft</button> <button class="go" id="submit">Submit</button></div><div class="card">${rows.filter(r=>r.payload.section===name).map(r=>`<div>${r.payload.application_no} · ${r.payload.farmer||""} <span class="pill">${r.status}</span></div>`).join("")||"No records"}</div>`;
 }
 function verifyView(rows){
   const need={lrp:"submitted",crp:"lrp_signed",krishi_sakhi:"crp_signed",supervisor:"sakhi_signed",district_admin:"supervisor_approved",admin:""};
@@ -145,6 +142,10 @@ async function saveRecord(status){
   const payload={ scheme, year, section:tab, application_no:(scheme||"GEN").toUpperCase()+"-"+Date.now().toString().slice(-8), farmer: (document.getElementById("farmer")||{}).value || (document.getElementById("searchFarmer")||{}).value, status };
   document.querySelectorAll("[id^='f-']").forEach(el=>payload[el.id.slice(2)]=el.value);
   const rec=await api("/api/records",{method:"POST", body:JSON.stringify({ cluster:me.cluster, village:(document.getElementById("village")||{}).value||"", form_type:scheme||"common", payload })});
+  const area=Number(payload.PKVYArea||payload.NaturalFarmingArea||payload.DemonstrationArea||payload.CropArea||0);
+  const land=Number(payload.TotalLandArea||0);
+  if(land && area>land) return alert("Scheme area total land se badi nahi ho sakti");
+  if(Number(payload.InputQuantity||payload.Quantity||0)<0) return alert("Quantity negative nahi ho sakti");
   const file=document.getElementById("photo")&&document.getElementById("photo").files[0];
   if(file){ const fd=new FormData(); fd.append("photo", file); await api("/api/records/"+rec.id+"/photo",{method:"POST", body:fd}); }
   alert(status==="draft"?"Draft saved":"Submitted"); show(tab);
