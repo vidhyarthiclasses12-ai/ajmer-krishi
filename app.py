@@ -847,6 +847,8 @@ def workflow(rid):
         if scheme not in ("pkvy", "natural") and stage in ("submitted", "draft"):
             current = -1
         expect = order[current + 1] if current + 1 < len(order) else None
+        if actor == "krishi_sakhi" and stage in ("submitted", "lrp_signed", "crp_signed"):
+            expect = "krishi_sakhi"
         if actor != expect and u["role"] != "admin":
             con.close()
             return jsonify({"error": "You cannot sign at this stage"}), 403
