@@ -18,6 +18,15 @@ os.makedirs(os.path.dirname(DB), exist_ok=True)
 
 app = Flask(__name__, static_folder="static")
 app.secret_key = os.environ.get("SECRET_KEY", "change-this-ajmer-krishi-secret")
+app.config.update(SESSION_COOKIE_HTTPONLY=True, SESSION_COOKIE_SAMESITE="Lax", PERMANENT_SESSION_LIFETIME=60*60*8)
+FAILS = {}
+
+@app.after_request
+def secure_headers(resp):
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["X-Frame-Options"] = "DENY"
+    resp.headers["Referrer-Policy"] = "same-origin"
+    return resp
 app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024
 
 BLOCKS = {
@@ -166,12 +175,17 @@ def home():
 
 @app.post("/api/login")
 def login():
+    ip = request.remote_addr or "local"
+    if FAILS.get(ip, 0) >= 8:
+        return jsonify({"error": "Too many failed logins. Try again later."}), 429
     data = request.json or {}
     con = db()
     user = con.execute("SELECT * FROM users WHERE username=? AND active=1", (data.get("username", "").strip(),)).fetchone()
     con.close()
     if not user or not check_password_hash(user["password_hash"], data.get("password", "")):
         return jsonify({"error": "गलत यूजरनेम या पासवर्ड"}), 401
+    FAILS[ip] = 0
+    session.permanent = True
     session["uid"] = user["id"]
     return jsonify({"id": user["id"], "name": user["name"], "role": user["role"], "cluster": user["cluster"], "username": user["username"], "mobile": user["mobile"]})
 
@@ -417,7 +431,8 @@ def add_user():
     allowed = ("aao", "supervisor", "lrp", "krishi_sakhi", "crp") if me["role"] == "district_admin" else ("district_admin", "aao", "supervisor", "lrp", "krishi_sakhi", "crp")
     if data.get("role") not in allowed:
         return jsonify({"error": "District Admin can only create cluster users"}), 403
-    if len(data.get("password", "")) < 8:
+    pw = data.get("password", "")
+    if len(pw) < 8 or pw.lower()==pw or pw.upper()==pw or not any(ch.isdigit() for ch in pw):
         return jsonify({"error": "Password must be at least 8 characters"}), 400
     mobile = (data.get("mobile") or "").strip()
     if len(mobile) < 10:
