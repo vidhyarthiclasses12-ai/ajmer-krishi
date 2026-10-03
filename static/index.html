@@ -136,13 +136,14 @@ function verifyView(rows){
     </div>`).join("")||"<p>No pending records. They appear for AAO only after the supervisor signs.</p>"}</div>`;
 }
 function reportView(rows){
-  const ready=rows.filter(r=>r.status==="aao_approved"||me.role==="admin");
-  return `<div class="card"><h3>${SCHEMES[scheme].title} Report</h3>
+  const ready=rows.filter(r=>["aao_approved","supervisor_signed","signed"].includes(r.status)||me.role==="admin"||me.role==="district_admin");
+  window.REPORT_ROWS=ready;
+  return `<div class="card"><h3>${SCHEMES[scheme].title} Report</h3><p>${ready.length} records</p>
     <label>Format</label><select id="fmt"><option>Farmer list</option><option>Activity</option><option>Cluster</option><option>Signed summary</option></select>
     <label><input type="checkbox" id="mask" checked/> Mask Jan Aadhaar</label>
     <button class="go" id="doPdf">Generate PDF</button> <a href="/api/export">Export Excel</a>
     <div id="pdfBox"></div>
-    <table><tr><th>Cluster</th><th>Farmer</th><th>Status</th><th>Jan</th></tr>${ready.map(r=>`<tr><td>${r.payload.PKVYClusterID||r.cluster||""}</td><td>${r.payload.farmer||r.payload.FarmerName||""}</td><td>${r.status}</td><td>${(r.payload.jan||"").length>4?"XXXX"+r.payload.jan.slice(-4):""}</td></tr>`).join("")}</table>
+    <table><tr><th>Cluster</th><th>Farmer</th><th>Village</th><th>Status</th><th>Jan</th></tr>${ready.map(r=>`<tr><td>${r.payload["Cluster ID"]||r.cluster||""}</td><td>${r.payload.farmer||r.payload["Farmer Name"]||""}</td><td>${r.payload.Village||r.village||""}</td><td>${r.status}</td><td>${String(r.payload["Jan Aadhaar"]||r.payload.jan||"").slice(-4)}</td></tr>`).join("")||"<tr><td colspan=5>No signed records in this scheme</td></tr>"}</table>
     ${me.role==="district_admin"||me.role==="admin"?`<h3>Revert signed report</h3><input id="revC" placeholder="Cluster ID"/><input id="revR" placeholder="Reason"/><button class="line" id="rev">Revert</button>`:""}
   </div>`;
 }
@@ -189,10 +190,10 @@ function wire(){
     const mask=document.getElementById("mask").checked;
     const rows=window.REPORT_ROWS||[];
     if(!rows.length) return alert("No records to print");
-    const body=rows.map(r=>{ const jan=(r.payload["Jan Aadhaar"]||r.payload.jan||"").toString(); const show=mask&&jan.length>4?"XXXX"+jan.slice(-4):jan; return `<tr><td>${r.payload["Cluster ID"]||r.cluster||""}</td><td>${r.payload.farmer||r.payload["Farmer Name"]||""}</td><td>${r.payload.Village||""}</td><td>${r.payload.Crop||""}</td><td>${show}</td><td>${r.status}</td></tr>`; }).join("");
-    const w=window.open("");
-    w.document.write(`<html><body><h2>Ajmer Agriculture Information</h2><h3>${SCHEMES[scheme].title} signed report</h3><p>Format: ${document.getElementById("fmt").value}</p><table border="1" cellpadding="6"><tr><th>Cluster ID</th><th>Farmer</th><th>Village</th><th>Crop</th><th>Jan Aadhaar</th><th>Status</th></tr>${body}</table><p>Supervisor and AAO signatures are recorded in the workflow history.</p></body></html>`);
-    w.document.close(); w.print();
+    const body=rows.map(r=>{ const jan=String(r.payload["Jan Aadhaar"]||r.payload.jan||""); const show=mask&&jan.length>4?"XXXX"+jan.slice(-4):jan; const signs=(r.history||[]).map(h=>h.status+" "+h.by_name).join(", "); return `<tr><td>${r.payload["Cluster ID"]||r.cluster||""}</td><td>${r.payload.farmer||r.payload["Farmer Name"]||""}</td><td>${r.payload.Village||r.village||""}</td><td>${r.payload.Crop||""}</td><td>${show}</td><td>${r.status}</td><td>${signs}</td></tr>`; }).join("");
+    const html=`<h2>Ajmer Agriculture Information</h2><h3>${SCHEMES[scheme].title} signed report</h3><table border="1" cellpadding="6"><tr><th>Cluster ID</th><th>Farmer</th><th>Village</th><th>Crop</th><th>Jan Aadhaar</th><th>Status</th><th>Signatures</th></tr>${body}</table>`;
+    document.getElementById("pdfBox").innerHTML=html+`<p><button class="go" id="printPdf">Print</button></p>`;
+    document.getElementById("printPdf").onclick=()=>{ const w=window.open(""); w.document.write(html); w.document.close(); w.print(); };
   };
   const rev=document.getElementById("rev"); if(rev) rev.onclick=async()=>{ try{ const r=await api("/api/revert",{method:"POST", body:JSON.stringify({cluster:revC.value, reason:revR.value})}); alert(r.count+" records wapas bheje"); }catch(e){ alert(e.message);} };
   const sf=document.getElementById("saveFarmer"); if(sf) sf.onclick=async()=>{ await api("/api/records",{method:"POST", body:JSON.stringify({ cluster:me.cluster, village:village.value, form_type:"farmer_master", payload:{ farmer_id:"FRM-2026-"+Date.now().toString().slice(-6), farmer:farmer.value, father:father.value, mobile:fmobile.value, category:category.value, jan: (document.getElementById("jan")||{}).value||"", year }})}); show("farmers"); };
