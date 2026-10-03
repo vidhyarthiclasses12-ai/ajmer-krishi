@@ -67,7 +67,7 @@ async function show(name){
   else if(name==="users"||name==="Users & Roles") panel.innerHTML=await userView();
   else if(name==="masters"||name==="Master Data") panel.innerHTML=clusterView(await api("/api/users"));
   else if(name==="Bulk Upload"||name==="excel"||name==="Excel") panel.innerHTML=excelView();
-  else if(name==="Complete") panel.innerHTML=(me.role==="supervisor"||me.role==="aao"||me.role==="admin")?verifyView(mine):`<div class="card">Complete and verification are only for the Supervisor and the Assistant Agriculture Officer.</div>`;
+  else if(name==="Complete") panel.innerHTML=(["supervisor","aao","admin","lrp","crp","krishi_sakhi"].includes(me.role))?verifyView(mine):`<div class="card">Sign is not open for this role.</div>`;
   else if(name==="log"||name==="Audit Log") panel.innerHTML=logView(rows);
   else if(name==="notes"||name==="Notifications") panel.innerHTML=await notePage();
   else if(name==="settings"||name==="Settings") panel.innerHTML=`<div class="card"><h3>Change password</h3><label>Current</label><input id="oldp" type="password"/><label>New</label><input id="newp" type="password"/><button class="go" id="chp">Update password</button>${me.role==="admin"?'<p><a href="/api/backup">Download backup</a></p>':""}</div>`;
@@ -132,8 +132,12 @@ function schemeForm(name, rows){
 }
 function verifyView(rows){
   const mine=rows.filter(r=>{
+    const field = scheme==="pkvy"||scheme==="natural";
+    if(me.role==="lrp") return field && (r.status==="submitted"||r.status==="returned");
+    if(me.role==="crp") return field && r.status==="lrp_signed";
+    if(me.role==="krishi_sakhi") return field && r.status==="crp_signed";
     if(me.role==="aao") return r.status==="supervisor_signed" || r.status==="signed";
-    if(me.role==="supervisor") return r.status==="submitted"||r.status==="draft"||r.status==="returned";
+    if(me.role==="supervisor") return field ? r.status==="sakhi_signed" : (r.status==="submitted"||r.status==="draft"||r.status==="returned");
     return true;
   });
   return `<div class="card"><h3>${me.role==="aao"?"AAO verification":"Supervisor complete"}</h3>
@@ -204,8 +208,8 @@ function wire(){
     if(!rows.length) return alert("No records to print");
     const body=rows.map(r=>{ const jan=String(r.payload["Jan Aadhaar"]||r.payload.jan||""); const show=mask&&jan.length>4?"XXXX"+jan.slice(-4):jan; return `<tr><td>${r.payload["Cluster ID"]||r.cluster||""}</td><td>${r.payload.farmer||r.payload["Farmer Name"]||""}</td><td>${r.payload.Mobile||r.payload.mobile||""}</td><td>${r.payload.Village||r.village||""}</td><td>${r.payload.Crop||""}</td><td>${show}</td><td>${r.status}</td></tr>`; }).join(""); const block=(rows[0]&&(rows[0].payload.Block||rows[0].payload.Tehsil||rows[0].payload.block))||"Ajmer";
     const gp=(rows[0]&&(rows[0].payload.GP||rows[0].payload["Gram Panchayat"]||rows[0].village))||"";
-    const postOf=role=>role==="aao"?"Assistant Agriculture Officer":"Agriculture Supervisor";
-    const third=role=>role==="aao"?block:(gp||block);
+    const postOf=role=>role==="aao"?"Assistant Agriculture Officer":role==="lrp"?"LRP":role==="crp"?"CRP":role==="krishi_sakhi"?"Krishi Sakhi":"Agriculture Supervisor";
+    const clusterName=(rows[0]&&(rows[0].payload["Cluster ID"]||rows[0].cluster))||""; const third=role=>role==="aao"?block:(role==="lrp"||role==="crp"||role==="krishi_sakhi")?clusterName:(gp||block);
     const latest={};
     rows.forEach(r=>(r.signatures||[]).forEach(sg=>{ latest[sg.role]=sg; }));
     const signs=Object.values(latest).map(sg=>`<div style="display:inline-block;margin:16px;text-align:center"><img src="${sg.image}" style="height:70px;border-bottom:1px solid #000"/><div>${sg.by_name}</div><div>${postOf(sg.role)}</div><div>${third(sg.role)}</div></div>`).join("")||"<p>No signature image saved yet.</p>";
