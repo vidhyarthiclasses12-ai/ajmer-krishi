@@ -355,7 +355,7 @@ def otp_send():
 def otp_reset():
     data = request.json or {}
     if len(data.get("password") or "") < 8:
-        return jsonify({"error": "नया पासवर्ड कम से कम 8 अक्षर"}), 400
+        return jsonify({"error": "नया Password must be at least 8 characters"}), 400
     con = db()
     row = con.execute("SELECT * FROM otps WHERE username=? AND code=? AND used=0 ORDER BY expires DESC", (data.get("username"), data.get("otp"))).fetchone()
     if not row or row["expires"] < datetime.now().isoformat(timespec="seconds"):
@@ -400,7 +400,7 @@ def admin_reset():
     data = request.json or {}
     password = data.get("password", "")
     if len(password) < 8:
-        return jsonify({"error": "पासवर्ड कम से कम 8 अक्षर"}), 400
+        return jsonify({"error": "Password must be at least 8 characters"}), 400
     con = db()
     con.execute("UPDATE users SET password_hash=? WHERE username=?", (generate_password_hash(password), data.get("username")))
     con.execute("UPDATE resets SET status='done' WHERE username=?", (data.get("username"),))
@@ -415,12 +415,12 @@ def add_user():
     me = current()
     allowed = ("aao", "supervisor", "lrp", "krishi_sakhi", "crp") if me["role"] == "district_admin" else ("district_admin", "aao", "supervisor", "lrp", "krishi_sakhi", "crp")
     if data.get("role") not in allowed:
-        return jsonify({"error": "District Admin sirf cluster user bana sakta hai"}), 403
+        return jsonify({"error": "District Admin can only create cluster users"}), 403
     if len(data.get("password", "")) < 8:
-        return jsonify({"error": "पासवर्ड कम से कम 8 अक्षर"}), 400
+        return jsonify({"error": "Password must be at least 8 characters"}), 400
     mobile = (data.get("mobile") or "").strip()
     if len(mobile) < 10:
-        return jsonify({"error": "मोबाइल नंबर जरूरी है"}), 400
+        return jsonify({"error": "Mobile number is required"}), 400
     con = db()
     try:
         con.execute(
@@ -431,7 +431,7 @@ def add_user():
         con.commit()
     except sqlite3.IntegrityError:
         con.close()
-        return jsonify({"error": "यूजरनेम पहले से है"}), 400
+        return jsonify({"error": "Username already exists"}), 400
     con.close()
     link = os.environ.get("SITE_URL", "https://ajmer-krishi.onrender.com")
     text = f"Ajmer Agriculture Information\nLink: {link}\nUsername: {data['username'].strip()}\nPassword: {data['password']}\nCluster: {data.get('cluster') or 'All'}"
@@ -505,7 +505,7 @@ def create_record():
     scheme = (data.get("form_type") or "")
     allowed = SCHEME_BY_ROLE.get(u["role"])
     if allowed and scheme not in allowed and scheme != "farmer_master":
-        return jsonify({"error": "यह योजना आपके रोल में नहीं है"}), 403
+        return jsonify({"error": "This scheme is not allowed for your role"}), 403
     rid = uuid.uuid4().hex
     now = datetime.now().isoformat(timespec="seconds")
     con = db()
@@ -623,7 +623,7 @@ def excel_upload():
     u = current()
     f = request.files.get("file")
     if not f:
-        return jsonify({"error": "फाइल नहीं"}), 400
+        return jsonify({"error": "File is missing"}), 400
     wb = load_workbook(f, data_only=True)
     ws = wb.active
     scheme = request.form.get("scheme") or "pkvy"
@@ -636,7 +636,7 @@ def excel_upload():
         ews.append([1, "Header", ", ".join(headers), "कॉलम नहीं मिले", "टेम्पलेट वाले कॉलम रखें: " + ", ".join(missing_cols)])
         os.makedirs(os.path.join(BASE, "data"), exist_ok=True)
         ew.save(os.path.join(BASE, "data", err_id + ".xlsx"))
-        return jsonify({"saved": 0, "errors": [{"row": 1, "type": "error", "detail": "कॉलम नहीं: " + ", ".join(missing_cols)}], "error_file": err_id, "message": "Excel header template se match nahi karta"})
+        return jsonify({"saved": 0, "errors": [{"row": 1, "type": "error", "detail": "Missing columns: " + ", ".join(missing_cols)}], "error_file": err_id, "message": "Excel header does not match the template"})
     def col(*parts):
         for i, h in enumerate(headers):
             if any(p in h.lower() for p in parts):
@@ -707,7 +707,7 @@ def excel_upload():
 def error_xlsx(eid):
     path = os.path.join(BASE, "data", eid + ".xlsx")
     if not os.path.exists(path):
-        return jsonify({"error": "एरर फाइल नहीं"}), 404
+        return jsonify({"error": "एरर File is missing"}), 404
     from flask import send_file
     return send_file(path, as_attachment=True, download_name="error-rows.xlsx")
 
@@ -725,23 +725,23 @@ def workflow(rid):
     rec = con.execute("SELECT * FROM records WHERE id=?", (rid,)).fetchone()
     if not rec:
         con.close()
-        return jsonify({"error": "रिकॉर्ड नहीं"}), 404
+        return jsonify({"error": "Record not found"}), 404
     status = rec["status"]
     if action == "return":
         if not note:
             con.close()
-            return jsonify({"error": "वापस भेजने का कारण जरूरी है"}), 400
+            return jsonify({"error": "A return reason is required"}), 400
         new = "returned"
     elif action == "sign":
         actor = data.get("actor") if u["role"] == "admin" and data.get("actor") in ("supervisor", "aao") else u["role"]
         expect = NEXT_ROLE.get(status)
         if actor not in ("admin", expect or ""):
             con.close()
-            return jsonify({"error": "इस चरण पर आप साइन नहीं कर सकते"}), 403
+            return jsonify({"error": "You cannot sign at this stage"}), 403
         new = {"supervisor": "supervisor_signed", "aao": "aao_approved"}.get(actor, "signed")
     else:
         con.close()
-        return jsonify({"error": "एक्शन गलत है"}), 400
+        return jsonify({"error": "Invalid action"}), 400
     con.execute("UPDATE records SET status=? WHERE id=?", (new, rid))
     add_history(con, rid, new, note or action, u["name"])
     con.commit()
@@ -753,12 +753,12 @@ def workflow(rid):
 def revert():
     u = current()
     if u["role"] not in ("admin", "district_admin"):
-        return jsonify({"error": "सिर्फ District Admin"}), 403
+        return jsonify({"error": "Only District Admin can do this"}), 403
     data = request.json or {}
     cid = (data.get("cluster") or "").strip()
     note = (data.get("reason") or "").strip()
     if not cid or not note:
-        return jsonify({"error": "Cluster ID और कारण जरूरी"}), 400
+        return jsonify({"error": "Cluster ID and reason are required"}), 400
     con = db()
     rows = con.execute("SELECT id, payload FROM records").fetchall()
     n = 0
