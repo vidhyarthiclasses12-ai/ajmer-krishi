@@ -813,7 +813,7 @@ def workflow(rid):
     sig = data.get("signature") or ""
     if sig.startswith("data:image"):
         con.execute("CREATE TABLE IF NOT EXISTS signatures (id TEXT PRIMARY KEY, record_id TEXT, role TEXT, by_name TEXT, image TEXT, at TEXT)")
-        con.execute("INSERT INTO signatures VALUES (?,?,?,?,?,?)", (uuid.uuid4().hex, rid, u["role"], u["name"], sig, datetime.now().isoformat(timespec="seconds")))
+        con.execute("INSERT INTO signatures VALUES (?,?,?,?,?,?)", (uuid.uuid4().hex, rid, data.get("actor") or u["role"], u["name"], sig, datetime.now().isoformat(timespec="seconds")))
     try:
         audit(con, u, action, "record", rid, new)
     except Exception:
