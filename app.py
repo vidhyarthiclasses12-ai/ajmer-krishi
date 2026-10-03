@@ -413,7 +413,7 @@ def admin_reset():
 def add_user():
     data = request.json or {}
     me = current()
-    allowed = ("supervisor", "lrp", "krishi_sakhi", "crp") if me["role"] == "district_admin" else ("district_admin", "supervisor", "lrp", "krishi_sakhi", "crp")
+    allowed = ("aao", "supervisor", "lrp", "krishi_sakhi", "crp") if me["role"] == "district_admin" else ("district_admin", "aao", "supervisor", "lrp", "krishi_sakhi", "crp")
     if data.get("role") not in allowed:
         return jsonify({"error": "District Admin sirf cluster user bana sakta hai"}), 403
     if len(data.get("password", "")) < 8:
@@ -466,7 +466,7 @@ SCHEME_BY_ROLE = {
 }
 
 def can_see_all(u):
-    return u["role"] in ("admin", "district_admin", "supervisor")
+    return u["role"] in ("admin", "district_admin", "supervisor", "aao")
 
 def visible_sql(u):
     if u["role"] in ("admin", "district_admin"):
@@ -699,8 +699,8 @@ def error_xlsx(eid):
     from flask import send_file
     return send_file(path, as_attachment=True, download_name="error-rows.xlsx")
 
-WORKFLOW = ["submitted", "lrp_signed", "crp_signed", "sakhi_signed", "supervisor_approved", "district_processed"]
-NEXT_ROLE = {"submitted": "lrp", "lrp_signed": "crp", "crp_signed": "krishi_sakhi", "sakhi_signed": "supervisor", "supervisor_approved": "district_admin"}
+WORKFLOW = ["submitted", "supervisor_signed", "aao_approved"]
+NEXT_ROLE = {"submitted": "supervisor", "supervisor_signed": "aao"}
 
 @app.post("/api/workflow/<rid>")
 @login_required
@@ -725,7 +725,7 @@ def workflow(rid):
         if u["role"] not in ("admin", expect or ""):
             con.close()
             return jsonify({"error": "इस चरण पर आप साइन नहीं कर सकते"}), 403
-        new = {"lrp": "lrp_signed", "crp": "crp_signed", "krishi_sakhi": "sakhi_signed", "supervisor": "supervisor_approved", "district_admin": "district_processed"}.get(u["role"], "signed")
+        new = {"supervisor": "supervisor_signed", "aao": "aao_approved"}.get(u["role"], "signed")
     else:
         con.close()
         return jsonify({"error": "एक्शन गलत है"}), 400
@@ -734,6 +734,30 @@ def workflow(rid):
     con.commit()
     con.close()
     return jsonify({"ok": True, "status": new})
+
+@app.post("/api/revert")
+@login_required
+def revert():
+    u = current()
+    if u["role"] not in ("admin", "district_admin"):
+        return jsonify({"error": "सिर्फ District Admin"}), 403
+    data = request.json or {}
+    cid = (data.get("cluster") or "").strip()
+    note = (data.get("reason") or "").strip()
+    if not cid or not note:
+        return jsonify({"error": "Cluster ID और कारण जरूरी"}), 400
+    con = db()
+    rows = con.execute("SELECT id, payload FROM records").fetchall()
+    n = 0
+    for r in rows:
+        pld = json.loads(r["payload"] or "{}")
+        if pld.get("cluster") == cid or pld.get("PKVYClusterID") == cid:
+            con.execute("UPDATE records SET status='returned' WHERE id=?", (r["id"],))
+            add_history(con, r["id"], "returned", note, u["name"])
+            n += 1
+    con.commit()
+    con.close()
+    return jsonify({"ok": True, "count": n})
 
 @app.get("/api/export")
 @login_required
