@@ -33,7 +33,7 @@
 <body>
 <div id="app"></div>
 <script>
-let me=null, blocks={}, scheme=null, tab="home", year="2026-27";
+let me=null, blocks={}, scheme=null, tab="home", year="2026-27", realRole="";
 const SCHEMES={
   pkvy:{title:"PKVY", full:"25 farmer, total 20 hectare", menu:["Dashboard","Farmer","Bulk Upload","Complete","Reports"]},
   natural:{title:"Natural Farming", full:"125 farmer, 1 acre each", menu:["Dashboard","Farmer","Bulk Upload","Complete","Reports"]},
@@ -46,14 +46,14 @@ async function api(url, opt={}) {
   if (!res.ok) throw new Error(data.error||"Error");
   return data;
 }
-async function boot(){ me=await fetch("/api/me").then(r=>r.json()); if(me){ blocks=await api("/api/meta"); window.LGD=(await api("/api/directory")).tree||{}; } render(); }
+async function boot(){ me=await fetch("/api/me").then(r=>r.json()); if(me){ realRole=me.role; blocks=await api("/api/meta"); window.LGD=(await api("/api/directory")).tree||{}; } render(); }
 function render(){ document.getElementById("app").innerHTML = me? shell(): login(); bind(); }
 function login(){ return `<div class="card login"><h2 style="color:#166534">Ajmer Agriculture Information</h2><label>Username</label><input id="u"/><label>Password</label><input id="p" type="password"/><p id="err" style="color:#b91c1c"></p><button class="go" id="go" style="width:100%">Login</button><p style="font-size:12px;color:#6b7280">Help: जिला कृषि कार्यालय, अजमेर · Version 1.0</p></div>`; }
 function shell(){
   const items = scheme? SCHEMES[scheme].menu.map(m=>[m,m]) : [["home","Dashboard"],["farmers","Farmer Master"],["users","Users & Roles"],["masters","Master Data"],["excel","Excel"],["log","Audit Log"],["settings","Settings"]];
   return `<div class="app"><aside><b>KRISHI WEB APP</b>${items.map(([id,label])=>`<button data-t="${id}" class="${tab===id?"active":""}">${label}</button>`).join("")}${scheme?`<button id="back">Main Dashboard</button>`:""}</aside>
   <main><header><div><b>Ajmer Agriculture Information</b><div style="font-size:12px;color:#6b7280">${scheme?SCHEMES[scheme].full:"Department of Agriculture"} · FY ${year}</div></div>
-  <span>${me.role==="admin"?`<select id="viewAs"><option value="">Test role</option><option>admin</option><option>district_admin</option><option>aao</option><option>supervisor</option><option>lrp</option><option>crp</option><option>krishi_sakhi</option></select>`:""}<select id="fy"><option>2025-26</option><option selected>2026-27</option><option>2027-28</option></select> ${me.name} · ${me.role} <button id="out" class="line">Logout</button></span></header>
+  <span>${realRole==="admin"?`<select id="viewAs"><option value="admin">System Admin</option><option value="district_admin">District Admin</option><option value="aao">AAO</option><option value="supervisor">Supervisor</option><option value="lrp">LRP</option><option value="crp">CRP</option><option value="krishi_sakhi">Krishi Sakhi</option></select>`:""}<select id="fy"><option>2025-26</option><option selected>2026-27</option><option>2027-28</option></select> ${me.name} · ${me.role} <button id="out" class="line">Logout</button></span></header>
   <div class="content" id="panel"></div></main></div>`;
 }
 async function show(name){
@@ -118,8 +118,8 @@ function schemeForm(name, rows){
   return `<div class="card"><h3>${SCHEMES[scheme].title} · ${name}</h3><label>Farmer ID search</label><input id="searchFarmer" placeholder="FRM-2026"/><button type="button" class="line" id="loadFarmer">Load master</button><p id="masterBox" class="muted"></p><div class="grid">${common.map(f=>field(f,true)).join("")}${extra.map(f=>field(f,false)).join("")}</div><p id="cond"></p><label>Photo</label><input id="photo" type="file" accept="image/*" capture="environment"/><button class="line" id="draft">Save draft</button> <button class="go" id="submit">Submit</button></div><div class="card">${rows.filter(r=>r.payload.section===name).map(r=>`<div>${r.payload.application_no} · ${r.payload.farmer||""} <span class="pill">${r.status}</span></div>`).join("")||"No records"}</div>`;
 }
 function verifyView(rows){
-  const need={lrp:"submitted",crp:"lrp_signed",krishi_sakhi:"crp_signed",supervisor:"sakhi_signed",district_admin:"supervisor_approved",admin:""};
-  const mine=rows.filter(r=>me.role==="admin"||r.status===need[me.role]);
+  const need={supervisor:"submitted",aao:"supervisor_signed",admin:""};
+  const mine=rows.filter(r=>me.role==="admin"||me.role==="supervisor"&&(r.status==="submitted"||r.status==="draft")||r.status===need[me.role]);
   return `<div class="card"><h3>Workflow · ${me.role}</h3><p class="muted">LRP sign → CRP sign → Krishi Sakhi sign → Supervisor approve → District process</p>${mine.map(r=>`<div style="border-bottom:1px solid #eee;padding:8px 0"><b>${r.payload.application_no||r.id.slice(0,6)}</b> ${r.payload.farmer||""} <span class="pill">${r.status}</span><label>Remark</label><input id="rm-${r.id}"/><button class="go" data-wf="${r.id}" data-a="sign">Sign & submit</button> <button class="line" data-wf="${r.id}" data-a="return">Return</button></div>`).join("")||"<p>Is role par pending nahi</p>"}</div>`;
 }
 function reportView(rows){
@@ -170,7 +170,7 @@ function wire(){
   document.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{ scheme=b.dataset.open; tab="Dashboard"; render(); });
   const back=document.getElementById("back"); if(back) back.onclick=()=>{ scheme=null; tab="home"; render(); };
   const fy=document.getElementById("fy"); if(fy) fy.onchange=()=>{ year=fy.value; show(tab); };
-  const viewAs=document.getElementById("viewAs"); if(viewAs) viewAs.onchange=()=>{ me.role=viewAs.value||"admin"; render(); };
+  const viewAs=document.getElementById("viewAs"); if(viewAs){ viewAs.value=me.role; viewAs.onchange=()=>{ me.role=viewAs.value; render(); }; }
   const doPdf=document.getElementById("doPdf"); if(doPdf) doPdf.onclick=()=>{ const mask=document.getElementById("mask").checked; const w=window.open(""); w.document.write("<h2>"+SCHEMES[scheme].title+" signed report</h2><p>Jan Aadhaar "+(mask?"masked":"full")+"</p>"); w.print(); };
   const rev=document.getElementById("rev"); if(rev) rev.onclick=async()=>{ try{ const r=await api("/api/revert",{method:"POST", body:JSON.stringify({cluster:revC.value, reason:revR.value})}); alert(r.count+" records wapas bheje"); }catch(e){ alert(e.message);} };
   const sf=document.getElementById("saveFarmer"); if(sf) sf.onclick=async()=>{ await api("/api/records",{method:"POST", body:JSON.stringify({ cluster:me.cluster, village:village.value, form_type:"farmer_master", payload:{ farmer_id:"FRM-2026-"+Date.now().toString().slice(-6), farmer:farmer.value, father:father.value, mobile:fmobile.value, category:category.value, jan: (document.getElementById("jan")||{}).value||"", year }})}); show("farmers"); };
