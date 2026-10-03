@@ -328,6 +328,20 @@ def map_gp():
     con.close()
     return jsonify({"ok": True, "cluster": cname})
 
+@app.post("/api/map/aao")
+@manager_required
+def map_aao():
+    data = request.json or {}
+    con = db()
+    user = con.execute("SELECT * FROM users WHERE username=? AND role='aao'", (data.get("username"),)).fetchone()
+    if not user:
+        con.close()
+        return jsonify({"error": "AAO user not found"}), 404
+    con.execute("CREATE TABLE IF NOT EXISTS aao_map (id TEXT PRIMARY KEY, user_id TEXT, block TEXT, office_type TEXT, office_name TEXT, supervisors TEXT)")
+    con.execute("INSERT INTO aao_map VALUES (?,?,?,?,?,?)", (uuid.uuid4().hex, user["id"], data.get("block") or "", data.get("office_type") or "block", data.get("office_name") or "", ",".join(data.get("supervisors") or [])))
+    con.commit(); con.close()
+    return jsonify({"ok": True})
+
 @app.get("/api/meta")
 def meta():
     con = db()
