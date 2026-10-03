@@ -275,9 +275,11 @@ def map_gp():
 def meta():
     con = db()
     out = {}
+    con.execute("CREATE TABLE IF NOT EXISTS scheme_clusters (id TEXT PRIMARY KEY, scheme TEXT, cluster_id TEXT, gp TEXT)")
     for c in con.execute("SELECT * FROM clusters ORDER BY name").fetchall():
         places = [dict(p) for p in con.execute("SELECT id, village, gram_panchayat FROM places WHERE cluster_id=?", (c["id"],)).fetchall()]
-        out[c["name"]] = {"id": c["id"], "district": c["district"], "block": c["block"], "places": places}
+        schemes = [r["scheme"] for r in con.execute("SELECT scheme FROM scheme_clusters WHERE cluster_id=?", (c["id"],)).fetchall()]
+        out[c["name"]] = {"id": c["id"], "district": c["district"], "block": c["block"], "places": places, "schemes": schemes, "gp": places[0]["gram_panchayat"] if places else ""}
     con.close()
     return jsonify(out)
 
