@@ -59,7 +59,7 @@ function shell(){
 async function show(name){
   tab=name;
   const rows=await api("/api/records");
-  const mine=scheme? rows.filter(r=>(r.payload.scheme||r.form_type)===scheme) : rows;
+  const mine=scheme? rows.filter(r=>r.form_type!=="farmer_master" && ((r.payload.scheme||r.form_type)===scheme || (r.payload.scheme||"")===scheme)) : rows;
   const farmers=rows.filter(r=>r.form_type==="farmer_master");
   const panel=document.getElementById("panel");
   if(!scheme && name==="home") panel.innerHTML=home(rows);
