@@ -228,10 +228,11 @@ def map_cluster():
         return jsonify({"error": "सिर्फ PKVY या Natural Farming"}), 400
     name = (data.get("name") or "").strip()
     if not name:
-        return jsonify({"error": "क्लस्टर नाम लिखें"}), 400
+        return jsonify({"error": "Cluster name is required"}), 400
     con = db()
     row = con.execute("SELECT id FROM clusters WHERE name=?", (name,)).fetchone()
     cid = row["id"] if row else uuid.uuid4().hex
+    code = (scheme or "CL")[:3].upper() + "-2026-" + cid[:4].upper()
     if not row:
         con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (cid, "अजमेर", data.get("tehsil") or "", name))
     con.execute("CREATE TABLE IF NOT EXISTS scheme_clusters (id TEXT PRIMARY KEY, scheme TEXT, cluster_id TEXT, gp TEXT)")
@@ -240,7 +241,7 @@ def map_cluster():
         con.execute("INSERT INTO places VALUES (?,?,?,?)", (uuid.uuid4().hex, cid, village, data.get("gp") or village))
     con.commit()
     con.close()
-    return jsonify({"ok": True, "id": cid})
+    return jsonify({"ok": True, "id": cid, "cluster_id": code})
 
 @app.post("/api/map/gp")
 @manager_required
