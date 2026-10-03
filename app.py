@@ -678,7 +678,26 @@ def excel_upload():
         saved.append(rid)
     con.commit()
     con.close()
-    return jsonify({"saved": len(saved), "errors": errors})
+    err_id = None
+    if errors:
+        ew = Workbook()
+        ews = ew.active
+        ews.append(["Row", "Field", "Entered", "Error"])
+        for e in errors:
+            ews.append([e.get("row"), e.get("detail"), "", e.get("type")])
+        err_id = uuid.uuid4().hex
+        os.makedirs(os.path.join(BASE, "data"), exist_ok=True)
+        ew.save(os.path.join(BASE, "data", err_id + ".xlsx"))
+    return jsonify({"saved": len(saved), "errors": errors, "error_file": err_id})
+
+@app.get("/api/errors/<eid>")
+@login_required
+def error_xlsx(eid):
+    path = os.path.join(BASE, "data", eid + ".xlsx")
+    if not os.path.exists(path):
+        return jsonify({"error": "एरर फाइल नहीं"}), 404
+    from flask import send_file
+    return send_file(path, as_attachment=True, download_name="error-rows.xlsx")
 
 @app.get("/api/export")
 @login_required
