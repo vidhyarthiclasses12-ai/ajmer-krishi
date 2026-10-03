@@ -808,7 +808,10 @@ def workflow(rid):
         return jsonify({"error": "Invalid action"}), 400
     con.execute("UPDATE records SET status=? WHERE id=?", (new, rid))
     add_history(con, rid, new, note or action, u["name"])
-    audit(con, u, action, "record", rid, new)
+    try:
+        audit(con, u, action, "record", rid, new)
+    except Exception:
+        pass
     con.commit()
     con.close()
     return jsonify({"ok": True, "status": new})
