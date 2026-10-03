@@ -589,6 +589,32 @@ REQUIRED = ["farmer", "crop", "kind", "area", "yield"]
 def norm(v):
     return str(v or "").strip().lower()
 
+
+TEMPLATES = {
+  "pkvy": ["Farmer ID","Farmer Name","Cluster ID","District","Tehsil","GP","Village","Area","Crop","Activity","Year"],
+  "natural": ["Farmer ID","Farmer Name","District","Tehsil","Village","Crop","Area","Practice","Activity","Unit","Year"],
+  "minikit": ["Farmer ID","Farmer Name","District","Tehsil","Village","Crop","Variety","Kit Type","Quantity","Lot Number","Distribution Date"],
+  "demo": ["Demonstration ID","Farmer ID","Farmer Name","District","Tehsil","Village","Crop","Variety","Area","Activity","Input","Visit Date","Result"],
+}
+REQUIRED_BY = {k: ["Farmer Name","Village"] for k in TEMPLATES}
+
+@app.get("/api/template")
+@login_required
+def template():
+    scheme = request.args.get("scheme") or "pkvy"
+    cols = TEMPLATES.get(scheme)
+    if not cols:
+        return jsonify({"error": "योजना नहीं मिली"}), 400
+    wb = Workbook()
+    ws = wb.active
+    ws.title = scheme
+    ws.append(cols)
+    bio = BytesIO()
+    wb.save(bio)
+    bio.seek(0)
+    from flask import send_file
+    return send_file(bio, as_attachment=True, download_name=f"{scheme}-template.xlsx")
+
 @app.post("/api/excel")
 @login_required
 def excel_upload():
@@ -598,7 +624,11 @@ def excel_upload():
         return jsonify({"error": "फाइल नहीं"}), 400
     wb = load_workbook(f, data_only=True)
     ws = wb.active
+    scheme = request.form.get("scheme") or "pkvy"
     headers = [str(c.value or "").strip() for c in next(ws.iter_rows(max_row=1))]
+    missing_cols = [c for c in TEMPLATES.get(scheme, []) if c not in headers]
+    if missing_cols:
+        return jsonify({"saved": 0, "errors": [{"row": 1, "type": "error", "detail": "कॉलम नहीं: " + ", ".join(missing_cols)}]})
     def col(*parts):
         for i, h in enumerate(headers):
             if any(p in h.lower() for p in parts):
@@ -619,16 +649,12 @@ def excel_upload():
     for n, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
         if not any(row):
             continue
-        item = {
-            "farmer": row[idx["farmer"]] if idx["farmer"] is not None else "",
-            "crop": row[idx["crop"]] if idx["crop"] is not None else "",
-            "kind": row[idx["kind"]] if idx["kind"] is not None else "",
-            "area": row[idx["area"]] if idx["area"] is not None else "",
-            "yield": row[idx["yield"]] if idx["yield"] is not None else "",
-            "yieldType": row[idx["ytype"]] if idx["ytype"] is not None else "अनुमानित",
-        }
-        missing = [k for k in REQUIRED if str(item.get(k) or "").strip() == ""]
-        key = norm(item["farmer"]) + "|" + norm(item["crop"])
+        item = {h: (row[i] if i < len(row) else "") for i, h in enumerate(headers)}
+        item["scheme"] = scheme
+        item["farmer"] = item.get("Farmer Name") or item.get("farmer")
+        item["crop"] = item.get("Crop") or item.get("crop")
+        missing = [k for k in REQUIRED_BY.get(scheme, []) if str(item.get(k) or "").strip() == ""]
+        key = scheme + "|" + norm(item.get("Farmer Name")) + "|" + norm(item.get("Village")) + "|" + norm(item.get("Crop"))
         if missing:
             errors.append({"row": n, "type": "error", "detail": ", ".join(missing) + " खाली"})
             continue
@@ -643,7 +669,7 @@ def excel_upload():
         rid = uuid.uuid4().hex
         con.execute(
             "INSERT INTO records VALUES (?,?,?,?,?,?,?,?,?,?)",
-            (rid, u["id"], u["name"], u["role"], u["cluster"], "", "Excel परिशिष्ट 8",
+            (rid, u["id"], u["name"], u["role"], u["cluster"], str(item.get("Village") or ""), scheme,
              json.dumps(item, ensure_ascii=False), "submitted", now),
         )
         add_history(con, rid, "submitted", "Excel से जमा", u["name"])
