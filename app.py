@@ -699,6 +699,42 @@ def error_xlsx(eid):
     from flask import send_file
     return send_file(path, as_attachment=True, download_name="error-rows.xlsx")
 
+WORKFLOW = ["submitted", "lrp_signed", "crp_signed", "sakhi_signed", "supervisor_approved", "district_processed"]
+NEXT_ROLE = {"submitted": "lrp", "lrp_signed": "crp", "crp_signed": "krishi_sakhi", "sakhi_signed": "supervisor", "supervisor_approved": "district_admin"}
+
+@app.post("/api/workflow/<rid>")
+@login_required
+def workflow(rid):
+    u = current()
+    data = request.json or {}
+    action = data.get("action")
+    note = (data.get("note") or "").strip()
+    con = db()
+    rec = con.execute("SELECT * FROM records WHERE id=?", (rid,)).fetchone()
+    if not rec:
+        con.close()
+        return jsonify({"error": "रिकॉर्ड नहीं"}), 404
+    status = rec["status"]
+    if action == "return":
+        if not note:
+            con.close()
+            return jsonify({"error": "वापस भेजने का कारण जरूरी है"}), 400
+        new = "returned"
+    elif action == "sign":
+        expect = NEXT_ROLE.get(status)
+        if u["role"] not in ("admin", expect or ""):
+            con.close()
+            return jsonify({"error": "इस चरण पर आप साइन नहीं कर सकते"}), 403
+        new = {"lrp": "lrp_signed", "crp": "crp_signed", "krishi_sakhi": "sakhi_signed", "supervisor": "supervisor_approved", "district_admin": "district_processed"}.get(u["role"], "signed")
+    else:
+        con.close()
+        return jsonify({"error": "एक्शन गलत है"}), 400
+    con.execute("UPDATE records SET status=? WHERE id=?", (new, rid))
+    add_history(con, rid, new, note or action, u["name"])
+    con.commit()
+    con.close()
+    return jsonify({"ok": True, "status": new})
+
 @app.get("/api/export")
 @login_required
 def export():
