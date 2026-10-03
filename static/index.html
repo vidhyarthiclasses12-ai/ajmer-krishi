@@ -206,7 +206,7 @@ function wire(){
       fd.append("file", file);
       fd.append("scheme", scheme||"pkvy");
       const res=await api("/api/excel",{method:"POST", body:fd});
-      document.getElementById("xr").innerHTML=`<p>${res.saved||0} saved. Invalid ${(res.errors||[]).length}</p>`+(res.errors||[]).map(e=>`<p style="color:#b91c1c">Row ${e.row}: ${e.detail}</p>`).join("")+(res.error_file?`<p><a href="/api/errors/${res.error_file}">Download error Excel</a></p>`:"");
+      document.getElementById("xr").innerHTML=`<p><b>${res.message||""}</b></p><p>${res.saved||0} saved. Invalid ${(res.errors||[]).length}</p>`+(res.errors||[]).map(e=>`<p style="color:#b91c1c">Row ${e.row}: ${e.detail}</p>`).join("")+(res.error_file?`<p><a class="go" href="/api/errors/${res.error_file}">Download error sheet</a></p>`:"<p>Koi error nahi</p>");
     }catch(e){ alert(e.message); }
   };
   const add=document.getElementById("nuadd"); if(add) add.onclick=async()=>{
