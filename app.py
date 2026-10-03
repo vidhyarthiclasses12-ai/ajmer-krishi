@@ -200,6 +200,37 @@ def login():
     con.commit(); con.close()
     return jsonify({"id": user["id"], "name": user["name"], "role": user["role"], "cluster": user["cluster"], "username": user["username"], "mobile": user["mobile"]})
 
+@app.post("/api/password")
+@login_required
+def change_password():
+    u = current()
+    data = request.json or {}
+    pw = data.get("password") or ""
+    if len(pw) < 8 or pw.lower()==pw or pw.upper()==pw or not any(ch.isdigit() for ch in pw):
+        return jsonify({"error": "Password needs 8 characters, upper, lower, and a number"}), 400
+    if not check_password_hash(u["password_hash"], data.get("old") or ""):
+        return jsonify({"error": "Current password is wrong"}), 400
+    con = db()
+    con.execute("UPDATE users SET password_hash=? WHERE id=?", (generate_password_hash(pw), u["id"]))
+    audit(con, u, "password_change", "user", u["id"])
+    con.commit(); con.close()
+    return jsonify({"ok": True})
+
+@app.get("/api/backup")
+@admin_required
+def backup():
+    from flask import send_file
+    return send_file(DB, as_attachment=True, download_name="ajmer-krishi-backup.db")
+
+@app.get("/api/notifications")
+@login_required
+def notifications():
+    u = current()
+    con = db()
+    rows = [dict(r) for r in con.execute("SELECT status, note, by_name, at FROM history ORDER BY at DESC LIMIT 30").fetchall()]
+    con.close()
+    return jsonify(rows)
+
 @app.post("/api/logout")
 def logout():
     session.clear()
@@ -249,8 +280,8 @@ def map_village():
 def map_cluster():
     data = request.json or {}
     scheme = data.get("scheme")
-    if scheme not in ("pkvy", "natural"):
-        return jsonify({"error": "सिर्फ PKVY या Natural Farming"}), 400
+    if scheme not in ("pkvy", "natural", "minikit", "demo"):
+        return jsonify({"error": "Choose PKVY, Natural Farming, Minikit, or Demonstration"}), 400
     name = (data.get("name") or "").strip()
     if not name:
         return jsonify({"error": "Cluster name is required"}), 400
@@ -707,6 +738,9 @@ def excel_upload():
             continue
         seen.add(key)
         clean.append(item)
+    if request.form.get("preview") == "1":
+        con.close()
+        return jsonify({"saved": 0, "preview": clean[:20], "valid": len(clean), "errors": errors, "message": f"Preview: {len(clean)} valid, {len(errors)} invalid"})
     saved = []
     now = datetime.now().isoformat(timespec="seconds")
     for item in clean:
