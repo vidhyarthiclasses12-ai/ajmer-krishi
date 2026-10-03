@@ -30,17 +30,17 @@ def secure_headers(resp):
 app.config["MAX_CONTENT_LENGTH"] = 12 * 1024 * 1024
 
 BLOCKS = {
-    "अजमेर ग्रामीण": ["गेगल", "घूघरा", "दौराई", "पुष्कर", "लोहागल", "हटूंडी", "सेदरिया"],
-    "बड़ल्या": ["बड़ल्या", "सराधना", "नारेली", "मगरा", "खोड़ा", "आंबा मसीना"],
-    "पीसांगन": ["पीसांगन", "गोला", "केसरपुरा", "बुधवाड़ा", "जेठाना", "गणहेड़ा"],
-    "किशनगढ़ (सिलोरा)": ["सिलोरा", "रूपनगढ़", "हरमाड़ा", "बांदरसिंदरी", "पाटन", "मोतीपुरा"],
-    "नसीराबाद": ["नसीराबाद", "तबाजी", "माकरवाली", "रामसर", "सरसुंडा"],
-    "श्रीनगर": ["श्रीनगर", "रामगढ़", "खारवा", "देलवाड़ा"],
-    "अराई": ["अराई", "बगहेरा", "जूनिया", "घाटियाली", "देवगांव"],
-    "भिनाय": ["भिनाय", "बांदनवाड़ा", "बारली", "देवलिया कलां", "हीरापुरा"],
-    "केकड़ी": ["केकड़ी", "जूनिया", "घाटियाली", "धूंधरी", "गुल्गांव"],
-    "सरवाड़": ["सरवाड़", "टांटुटी", "रामगढ़", "सांकलिया"],
-    "सावर": ["सावर", "रामगढ़", "खारवा", "टीटड़िया"],
+    "à¤…à¤œà¤®à¥‡à¤° à¤—à¥à¤°à¤¾à¤®à¥€à¤£": ["à¤—à¥‡à¤—à¤²", "à¤˜à¥‚à¤˜à¤°à¤¾", "à¤¦à¥Œà¤°à¤¾à¤ˆ", "à¤ªà¥à¤·à¥à¤•à¤°", "à¤²à¥‹à¤¹à¤¾à¤—à¤²", "à¤¹à¤Ÿà¥‚à¤‚à¤¡à¥€", "à¤¸à¥‡à¤¦à¤°à¤¿à¤¯à¤¾"],
+    "à¤¬à¤¡à¤¼à¤²à¥à¤¯à¤¾": ["à¤¬à¤¡à¤¼à¤²à¥à¤¯à¤¾", "à¤¸à¤°à¤¾à¤§à¤¨à¤¾", "à¤¨à¤¾à¤°à¥‡à¤²à¥€", "à¤®à¤—à¤°à¤¾", "à¤–à¥‹à¤¡à¤¼à¤¾", "à¤†à¤‚à¤¬à¤¾ à¤®à¤¸à¥€à¤¨à¤¾"],
+    "à¤ªà¥€à¤¸à¤¾à¤‚à¤—à¤¨": ["à¤ªà¥€à¤¸à¤¾à¤‚à¤—à¤¨", "à¤—à¥‹à¤²à¤¾", "à¤•à¥‡à¤¸à¤°à¤ªà¥à¤°à¤¾", "à¤¬à¥à¤§à¤µà¤¾à¤¡à¤¼à¤¾", "à¤œà¥‡à¤ à¤¾à¤¨à¤¾", "à¤—à¤£à¤¹à¥‡à¤¡à¤¼à¤¾"],
+    "à¤•à¤¿à¤¶à¤¨à¤—à¤¢à¤¼ (à¤¸à¤¿à¤²à¥‹à¤°à¤¾)": ["à¤¸à¤¿à¤²à¥‹à¤°à¤¾", "à¤°à¥‚à¤ªà¤¨à¤—à¤¢à¤¼", "à¤¹à¤°à¤®à¤¾à¤¡à¤¼à¤¾", "à¤¬à¤¾à¤‚à¤¦à¤°à¤¸à¤¿à¤‚à¤¦à¤°à¥€", "à¤ªà¤¾à¤Ÿà¤¨", "à¤®à¥‹à¤¤à¥€à¤ªà¥à¤°à¤¾"],
+    "à¤¨à¤¸à¥€à¤°à¤¾à¤¬à¤¾à¤¦": ["à¤¨à¤¸à¥€à¤°à¤¾à¤¬à¤¾à¤¦", "à¤¤à¤¬à¤¾à¤œà¥€", "à¤®à¤¾à¤•à¤°à¤µà¤¾à¤²à¥€", "à¤°à¤¾à¤®à¤¸à¤°", "à¤¸à¤°à¤¸à¥à¤‚à¤¡à¤¾"],
+    "à¤¶à¥à¤°à¥€à¤¨à¤—à¤°": ["à¤¶à¥à¤°à¥€à¤¨à¤—à¤°", "à¤°à¤¾à¤®à¤—à¤¢à¤¼", "à¤–à¤¾à¤°à¤µà¤¾", "à¤¦à¥‡à¤²à¤µà¤¾à¤¡à¤¼à¤¾"],
+    "à¤…à¤°à¤¾à¤ˆ": ["à¤…à¤°à¤¾à¤ˆ", "à¤¬à¤—à¤¹à¥‡à¤°à¤¾", "à¤œà¥‚à¤¨à¤¿à¤¯à¤¾", "à¤˜à¤¾à¤Ÿà¤¿à¤¯à¤¾à¤²à¥€", "à¤¦à¥‡à¤µà¤—à¤¾à¤‚à¤µ"],
+    "à¤­à¤¿à¤¨à¤¾à¤¯": ["à¤­à¤¿à¤¨à¤¾à¤¯", "à¤¬à¤¾à¤‚à¤¦à¤¨à¤µà¤¾à¤¡à¤¼à¤¾", "à¤¬à¤¾à¤°à¤²à¥€", "à¤¦à¥‡à¤µà¤²à¤¿à¤¯à¤¾ à¤•à¤²à¤¾à¤‚", "à¤¹à¥€à¤°à¤¾à¤ªà¥à¤°à¤¾"],
+    "à¤•à¥‡à¤•à¤¡à¤¼à¥€": ["à¤•à¥‡à¤•à¤¡à¤¼à¥€", "à¤œà¥‚à¤¨à¤¿à¤¯à¤¾", "à¤˜à¤¾à¤Ÿà¤¿à¤¯à¤¾à¤²à¥€", "à¤§à¥‚à¤‚à¤§à¤°à¥€", "à¤—à¥à¤²à¥à¤—à¤¾à¤‚à¤µ"],
+    "à¤¸à¤°à¤µà¤¾à¤¡à¤¼": ["à¤¸à¤°à¤µà¤¾à¤¡à¤¼", "à¤Ÿà¤¾à¤‚à¤Ÿà¥à¤Ÿà¥€", "à¤°à¤¾à¤®à¤—à¤¢à¤¼", "à¤¸à¤¾à¤‚à¤•à¤²à¤¿à¤¯à¤¾"],
+    "à¤¸à¤¾à¤µà¤°": ["à¤¸à¤¾à¤µà¤°", "à¤°à¤¾à¤®à¤—à¤¢à¤¼", "à¤–à¤¾à¤°à¤µà¤¾", "à¤Ÿà¥€à¤Ÿà¤¡à¤¼à¤¿à¤¯à¤¾"],
 }
 
 def db():
@@ -102,7 +102,7 @@ def login_required(fn):
     @wraps(fn)
     def wrap(*a, **k):
         if not current():
-            return jsonify({"error": "लॉगिन जरूरी है"}), 401
+            return jsonify({"error": "à¤²à¥‰à¤—à¤¿à¤¨ à¤œà¤°à¥‚à¤°à¥€ à¤¹à¥ˆ"}), 401
         return fn(*a, **k)
     return wrap
 
@@ -111,7 +111,7 @@ def admin_required(fn):
     def wrap(*a, **k):
         u = current()
         if not u or not can_see_all(u):
-            return jsonify({"error": "सिर्फ System Admin"}), 403
+            return jsonify({"error": "à¤¸à¤¿à¤°à¥à¤« System Admin"}), 403
         return fn(*a, **k)
     return wrap
 
@@ -159,7 +159,7 @@ def manager_required(fn):
     def wrap(*a, **k):
         u = current()
         if not u or u["role"] not in ("admin", "district_admin"):
-            return jsonify({"error": "System Admin या District Admin"}), 403
+            return jsonify({"error": "System Admin à¤¯à¤¾ District Admin"}), 403
         return fn(*a, **k)
     return wrap
 
@@ -191,7 +191,7 @@ def login():
     user = con.execute("SELECT * FROM users WHERE username=? AND active=1", (data.get("username", "").strip(),)).fetchone()
     con.close()
     if not user or not check_password_hash(user["password_hash"], data.get("password", "")):
-        return jsonify({"error": "गलत यूजरनेम या पासवर्ड"}), 401
+        return jsonify({"error": "à¤—à¤²à¤¤ à¤¯à¥‚à¤œà¤°à¤¨à¥‡à¤® à¤¯à¤¾ à¤ªà¤¾à¤¸à¤µà¤°à¥à¤¡"}), 401
     FAILS[ip] = 0
     session.permanent = True
     session["uid"] = user["id"]
@@ -243,7 +243,7 @@ def me():
         return jsonify(None)
     return jsonify({"id": u["id"], "name": u["name"], "role": u["role"], "cluster": u["cluster"], "username": u["username"], "mobile": u["mobile"]})
 
-TEHSILS = ["अजमेर","पीसांगन","पुष्कर","किशनगढ़","नसीराबाद","श्रीनगर","अराई","केकड़ी","भिनाय","सरवाड़","सावर"]
+TEHSILS = ["à¤…à¤œà¤®à¥‡à¤°","à¤ªà¥€à¤¸à¤¾à¤‚à¤—à¤¨","à¤ªà¥à¤·à¥à¤•à¤°","à¤•à¤¿à¤¶à¤¨à¤—à¤¢à¤¼","à¤¨à¤¸à¥€à¤°à¤¾à¤¬à¤¾à¤¦","à¤¶à¥à¤°à¥€à¤¨à¤—à¤°","à¤…à¤°à¤¾à¤ˆ","à¤•à¥‡à¤•à¤¡à¤¼à¥€","à¤­à¤¿à¤¨à¤¾à¤¯","à¤¸à¤°à¤µà¤¾à¤¡à¤¼","à¤¸à¤¾à¤µà¤°"]
 
 def lgd_tree():
     path = os.path.join(BASE, "ajmer_lgd.json")
@@ -260,9 +260,9 @@ def lgd_tree():
 @app.get("/api/directory")
 def directory():
     try:
-        return jsonify({"district": "अजमेर", "tree": lgd_tree()})
+        return jsonify({"district": "à¤…à¤œà¤®à¥‡à¤°", "tree": lgd_tree()})
     except Exception:
-        return jsonify({"district": "अजमेर", "tree": {}})
+        return jsonify({"district": "à¤…à¤œà¤®à¥‡à¤°", "tree": {}})
 
 @app.post("/api/directory/village")
 @admin_required
@@ -270,7 +270,7 @@ def map_village():
     data = request.json or {}
     tehsil, gp, village = (data.get("tehsil") or "").strip(), (data.get("gp") or "").strip(), (data.get("village") or "").strip()
     if not tehsil or not village:
-        return jsonify({"error": "तहसील और गाँव जरूरी"}), 400
+        return jsonify({"error": "à¤¤à¤¹à¤¸à¥€à¤² à¤”à¤° à¤—à¤¾à¤à¤µ à¤œà¤°à¥‚à¤°à¥€"}), 400
     con = db()
     con.execute("CREATE TABLE IF NOT EXISTS extra_villages (id TEXT PRIMARY KEY, tehsil TEXT, gp TEXT, village TEXT)")
     con.execute("INSERT INTO extra_villages VALUES (?,?,?,?)", (uuid.uuid4().hex, tehsil, gp or "Unassigned", village))
@@ -293,7 +293,7 @@ def map_cluster():
     cid = row["id"] if row else uuid.uuid4().hex
     code = (scheme or "CL")[:3].upper() + "-2026-" + cid[:4].upper()
     if not row:
-        con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (cid, "अजमेर", data.get("tehsil") or "", name))
+        con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (cid, "à¤…à¤œà¤®à¥‡à¤°", data.get("tehsil") or "", name))
     con.execute("CREATE TABLE IF NOT EXISTS scheme_clusters (id TEXT PRIMARY KEY, scheme TEXT, cluster_id TEXT, gp TEXT)")
     con.execute("INSERT INTO scheme_clusters VALUES (?,?,?,?)", (uuid.uuid4().hex, scheme, cid, data.get("gp") or ""))
     for village in data.get("villages") or []:
@@ -313,14 +313,14 @@ def map_gp():
     user = con.execute("SELECT * FROM users WHERE username=? AND role='supervisor' AND active=1", (username,)).fetchone()
     if not user:
         con.close()
-        return jsonify({"error": "Agriculture Supervisor नहीं मिला"}), 404
+        return jsonify({"error": "Agriculture Supervisor à¤¨à¤¹à¥€à¤‚ à¤®à¤¿à¤²à¤¾"}), 404
     con.execute("CREATE TABLE IF NOT EXISTS supervisor_gp (id TEXT PRIMARY KEY, user_id TEXT, tehsil TEXT, gp TEXT)")
     con.execute("INSERT INTO supervisor_gp VALUES (?,?,?,?)", (uuid.uuid4().hex, user["id"], tehsil, gp))
     cname = gp + " cluster"
     row = con.execute("SELECT id FROM clusters WHERE name=?", (cname,)).fetchone()
     cid = row["id"] if row else uuid.uuid4().hex
     if not row:
-        con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (cid, "अजमेर", tehsil, cname))
+        con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (cid, "à¤…à¤œà¤®à¥‡à¤°", tehsil, cname))
     tree = lgd_tree()
     for village in (tree.get(tehsil) or {}).get(gp) or []:
         exists = con.execute("SELECT 1 FROM places WHERE cluster_id=? AND village=?", (cid, village)).fetchone()
@@ -363,14 +363,14 @@ def add_cluster():
     data = request.json or {}
     name = (data.get("name") or "").strip()
     if not name:
-        return jsonify({"error": "क्लस्टर नाम लिखें"}), 400
+        return jsonify({"error": "à¤•à¥à¤²à¤¸à¥à¤Ÿà¤° à¤¨à¤¾à¤® à¤²à¤¿à¤–à¥‡à¤‚"}), 400
     con = db()
     try:
-        con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (uuid.uuid4().hex, data.get("district") or "अजमेर", data.get("block") or name, name))
+        con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (uuid.uuid4().hex, data.get("district") or "à¤…à¤œà¤®à¥‡à¤°", data.get("block") or name, name))
         con.commit()
     except sqlite3.IntegrityError:
         con.close()
-        return jsonify({"error": "यह क्लस्टर पहले से है"}), 400
+        return jsonify({"error": "à¤¯à¤¹ à¤•à¥à¤²à¤¸à¥à¤Ÿà¤° à¤ªà¤¹à¤²à¥‡ à¤¸à¥‡ à¤¹à¥ˆ"}), 400
     con.close()
     return jsonify({"ok": True})
 
@@ -389,7 +389,7 @@ def del_cluster(cid):
 def add_place():
     data = request.json or {}
     if not data.get("cluster_id") or not data.get("village"):
-        return jsonify({"error": "क्लस्टर और गाँव जरूरी"}), 400
+        return jsonify({"error": "à¤•à¥à¤²à¤¸à¥à¤Ÿà¤° à¤”à¤° à¤—à¤¾à¤à¤µ à¤œà¤°à¥‚à¤°à¥€"}), 400
     con = db()
     con.execute("INSERT INTO places VALUES (?,?,?,?)", (uuid.uuid4().hex, data["cluster_id"], data["village"].strip(), (data.get("gram_panchayat") or data["village"]).strip()))
     con.commit()
@@ -414,7 +414,7 @@ def otp_send():
     user = con.execute("SELECT * FROM users WHERE username=? AND active=1", (username,)).fetchone()
     if not user or (user["mobile"] or "")[-10:] != mobile[-10:]:
         con.close()
-        return jsonify({"error": "यूजरनेम और मोबाइल मेल नहीं खाते"}), 400
+        return jsonify({"error": "à¤¯à¥‚à¤œà¤°à¤¨à¥‡à¤® à¤”à¤° à¤®à¥‹à¤¬à¤¾à¤‡à¤² à¤®à¥‡à¤² à¤¨à¤¹à¥€à¤‚ à¤–à¤¾à¤¤à¥‡"}), 400
     code = f"{random.randint(100000, 999999)}"
     exp = (datetime.now() + timedelta(minutes=10)).isoformat(timespec="seconds")
     con.execute("INSERT INTO otps VALUES (?,?,?,?,?,0)", (uuid.uuid4().hex, username, mobile, code, exp))
@@ -422,19 +422,19 @@ def otp_send():
     con.close()
     sent = send_sms(mobile, code)
     if sent:
-        return jsonify({"ok": True, "message": "OTP मोबाइल पर भेज दिया। 10 मिनट तक मान्य है।"})
-    return jsonify({"ok": True, "message": "OTP बन गया, SMS कुंजी अभी सेट नहीं है। एडमिन Users में OTP देख सकता है।"})
+        return jsonify({"ok": True, "message": "OTP à¤®à¥‹à¤¬à¤¾à¤‡à¤² à¤ªà¤° à¤­à¥‡à¤œ à¤¦à¤¿à¤¯à¤¾à¥¤ 10 à¤®à¤¿à¤¨à¤Ÿ à¤¤à¤• à¤®à¤¾à¤¨à¥à¤¯ à¤¹à¥ˆà¥¤"})
+    return jsonify({"ok": True, "message": "OTP à¤¬à¤¨ à¤—à¤¯à¤¾, SMS à¤•à¥à¤‚à¤œà¥€ à¤…à¤­à¥€ à¤¸à¥‡à¤Ÿ à¤¨à¤¹à¥€à¤‚ à¤¹à¥ˆà¥¤ à¤à¤¡à¤®à¤¿à¤¨ Users à¤®à¥‡à¤‚ OTP à¤¦à¥‡à¤– à¤¸à¤•à¤¤à¤¾ à¤¹à¥ˆà¥¤"})
 
 @app.post("/api/otp/reset")
 def otp_reset():
     data = request.json or {}
     if len(data.get("password") or "") < 8:
-        return jsonify({"error": "नया Password must be at least 8 characters"}), 400
+        return jsonify({"error": "à¤¨à¤¯à¤¾ Password must be at least 8 characters"}), 400
     con = db()
     row = con.execute("SELECT * FROM otps WHERE username=? AND code=? AND used=0 ORDER BY expires DESC", (data.get("username"), data.get("otp"))).fetchone()
     if not row or row["expires"] < datetime.now().isoformat(timespec="seconds"):
         con.close()
-        return jsonify({"error": "OTP गलत या खत्म हो गया"}), 400
+        return jsonify({"error": "OTP à¤—à¤²à¤¤ à¤¯à¤¾ à¤–à¤¤à¥à¤® à¤¹à¥‹ à¤—à¤¯à¤¾"}), 400
     con.execute("UPDATE users SET password_hash=? WHERE username=?", (generate_password_hash(data["password"]), data.get("username")))
     con.execute("UPDATE otps SET used=1 WHERE id=?", (row["id"],))
     con.commit()
@@ -453,12 +453,12 @@ def list_otps():
 def reset_request():
     username = (request.json or {}).get("username", "").strip()
     if not username:
-        return jsonify({"error": "यूजरनेम लिखें"}), 400
+        return jsonify({"error": "à¤¯à¥‚à¤œà¤°à¤¨à¥‡à¤® à¤²à¤¿à¤–à¥‡à¤‚"}), 400
     con = db()
     con.execute("INSERT INTO resets VALUES (?,?,?,?)", (uuid.uuid4().hex, username, "pending", datetime.now().isoformat(timespec="seconds")))
     con.commit()
     con.close()
-    return jsonify({"ok": True, "message": "अनुरोध एडमिन के पास चला गया"})
+    return jsonify({"ok": True, "message": "à¤…à¤¨à¥à¤°à¥‹à¤§ à¤à¤¡à¤®à¤¿à¤¨ à¤•à¥‡ à¤ªà¤¾à¤¸ à¤šà¤²à¤¾ à¤—à¤¯à¤¾"})
 
 @app.get("/api/resets")
 @admin_required
@@ -526,7 +526,7 @@ def users():
 def delete_user(uid):
     me = current()
     if uid == me["id"]:
-        return jsonify({"error": "अपना लॉगिन नहीं मिटा सकते"}), 400
+        return jsonify({"error": "à¤…à¤ªà¤¨à¤¾ à¤²à¥‰à¤—à¤¿à¤¨ à¤¨à¤¹à¥€à¤‚ à¤®à¤¿à¤Ÿà¤¾ à¤¸à¤•à¤¤à¥‡"}), 400
     con = db()
     con.execute("UPDATE users SET active=0 WHERE id=?", (uid,))
     con.commit()
@@ -578,7 +578,7 @@ def create_record():
     data = request.json or {}
     cluster = u["cluster"] if u["role"] not in ("admin", "district_admin") else (data.get("cluster") or u["cluster"])
     if u["role"] not in ("admin", "district_admin") and data.get("cluster") and data.get("cluster") != u["cluster"]:
-        return jsonify({"error": "आप केवल अपने क्लस्टर का डेटा भर सकते हैं"}), 403
+        return jsonify({"error": "à¤†à¤ª à¤•à¥‡à¤µà¤² à¤…à¤ªà¤¨à¥‡ à¤•à¥à¤²à¤¸à¥à¤Ÿà¤° à¤•à¤¾ à¤¡à¥‡à¤Ÿà¤¾ à¤­à¤° à¤¸à¤•à¤¤à¥‡ à¤¹à¥ˆà¤‚"}), 403
     scheme = (data.get("form_type") or "")
     allowed = SCHEME_BY_ROLE.get(u["role"])
     if allowed and scheme not in allowed and scheme != "farmer_master":
@@ -588,10 +588,10 @@ def create_record():
     con = db()
     con.execute(
         "INSERT INTO records VALUES (?,?,?,?,?,?,?,?,?,?)",
-        (rid, u["id"], u["name"], u["role"], cluster, data.get("village", ""), data.get("form_type", "परिशिष्ट 8"),
+        (rid, u["id"], u["name"], u["role"], cluster, data.get("village", ""), data.get("form_type", "à¤ªà¤°à¤¿à¤¶à¤¿à¤·à¥à¤Ÿ 8"),
          json.dumps(data.get("payload") or {}, ensure_ascii=False), "submitted", now),
     )
-    add_history(con, rid, "submitted", "जमा किया", u["name"])
+    add_history(con, rid, "submitted", "à¤œà¤®à¤¾ à¤•à¤¿à¤¯à¤¾", u["name"])
     con.commit()
     con.close()
     return jsonify({"id": rid})
@@ -604,11 +604,11 @@ def upload_photo(rid):
     rec = con.execute("SELECT * FROM records WHERE id=?", (rid,)).fetchone()
     if not rec or (not can_see_all(u) and rec["cluster"] != u["cluster"]):
         con.close()
-        return jsonify({"error": "रिपोर्ट नहीं मिली"}), 404
+        return jsonify({"error": "à¤°à¤¿à¤ªà¥‹à¤°à¥à¤Ÿ à¤¨à¤¹à¥€à¤‚ à¤®à¤¿à¤²à¥€"}), 404
     f = request.files.get("photo")
     if not f:
         con.close()
-        return jsonify({"error": "फोटो नहीं"}), 400
+        return jsonify({"error": "à¤«à¥‹à¤Ÿà¥‹ à¤¨à¤¹à¥€à¤‚"}), 400
     ext = os.path.splitext(secure_filename(f.filename or "photo.jpg"))[1] or ".jpg"
     name = rid + "_" + uuid.uuid4().hex[:8] + ext
     f.save(os.path.join(UPLOAD, name))
@@ -629,7 +629,7 @@ def photo(pid):
     ).fetchone()
     con.close()
     if not row or (not can_see_all(u) and row["cluster"] != u["cluster"]):
-        return jsonify({"error": "नहीं"}), 404
+        return jsonify({"error": "à¤¨à¤¹à¥€à¤‚"}), 404
     return send_from_directory(UPLOAD, row["filename"])
 
 @app.post("/api/records/<rid>/edit")
@@ -659,7 +659,7 @@ def set_status(rid):
     data = request.json or {}
     status = data.get("status")
     if status not in ("submitted", "correction_required", "resubmitted", "approved"):
-        return jsonify({"error": "स्टेटस गलत"}), 400
+        return jsonify({"error": "à¤¸à¥à¤Ÿà¥‡à¤Ÿà¤¸ à¤—à¤²à¤¤"}), 400
     u = current()
     con = db()
     con.execute("UPDATE records SET status=? WHERE id=?", (status, rid))
@@ -676,10 +676,10 @@ def resubmit(rid):
     rec = con.execute("SELECT * FROM records WHERE id=?", (rid,)).fetchone()
     if not rec or rec["user_id"] != u["id"]:
         con.close()
-        return jsonify({"error": "नहीं मिली"}), 404
+        return jsonify({"error": "à¤¨à¤¹à¥€à¤‚ à¤®à¤¿à¤²à¥€"}), 404
     payload = request.json or {}
     con.execute("UPDATE records SET payload=?, status='resubmitted' WHERE id=?", (json.dumps(payload.get("payload") or {}, ensure_ascii=False), rid))
-    add_history(con, rid, "resubmitted", payload.get("note", "दोबारा जमा"), u["name"])
+    add_history(con, rid, "resubmitted", payload.get("note", "à¤¦à¥‹à¤¬à¤¾à¤°à¤¾ à¤œà¤®à¤¾"), u["name"])
     con.commit()
     con.close()
     return jsonify({"ok": True})
@@ -704,7 +704,7 @@ def template():
     scheme = request.args.get("scheme") or "pkvy"
     cols = TEMPLATES.get(scheme)
     if not cols:
-        return jsonify({"error": "योजना नहीं मिली"}), 400
+        return jsonify({"error": "à¤¯à¥‹à¤œà¤¨à¤¾ à¤¨à¤¹à¥€à¤‚ à¤®à¤¿à¤²à¥€"}), 400
     wb = Workbook()
     ws = wb.active
     ws.title = scheme
@@ -734,7 +734,7 @@ def excel_upload():
         err_id = uuid.uuid4().hex
         ew = Workbook(); ews = ew.active
         ews.append(["Row", "Field", "Entered", "Error", "Correction"])
-        ews.append([1, "Header", ", ".join(headers), "कॉलम नहीं मिले", "टेम्पलेट वाले कॉलम रखें: " + ", ".join(missing_cols)])
+        ews.append([1, "Header", ", ".join(headers), "à¤•à¥‰à¤²à¤® à¤¨à¤¹à¥€à¤‚ à¤®à¤¿à¤²à¥‡", "à¤Ÿà¥‡à¤®à¥à¤ªà¤²à¥‡à¤Ÿ à¤µà¤¾à¤²à¥‡ à¤•à¥‰à¤²à¤® à¤°à¤–à¥‡à¤‚: " + ", ".join(missing_cols)])
         os.makedirs(os.path.join(BASE, "data"), exist_ok=True)
         ew.save(os.path.join(BASE, "data", err_id + ".xlsx"))
         return jsonify({"saved": 0, "errors": [{"row": 1, "type": "error", "detail": "Missing columns: " + ", ".join(missing_cols)}], "error_file": err_id, "message": "Excel header does not match the template"})
@@ -744,12 +744,12 @@ def excel_upload():
                 return i
         return None
     idx = {
-        "farmer": col("किसान", "farmer"),
-        "crop": col("फसल", "crop"),
-        "kind": col("किस्म", "kind"),
-        "area": col("क्षेत्र", "area"),
-        "yield": col("उपज", "yield"),
-        "ytype": col("अनुमानित", "वास्तविक", "type"),
+        "farmer": col("à¤•à¤¿à¤¸à¤¾à¤¨", "farmer"),
+        "crop": col("à¤«à¤¸à¤²", "crop"),
+        "kind": col("à¤•à¤¿à¤¸à¥à¤®", "kind"),
+        "area": col("à¤•à¥à¤·à¥‡à¤¤à¥à¤°", "area"),
+        "yield": col("à¤‰à¤ªà¤œ", "yield"),
+        "ytype": col("à¤…à¤¨à¥à¤®à¤¾à¤¨à¤¿à¤¤", "à¤µà¤¾à¤¸à¥à¤¤à¤µà¤¿à¤•", "type"),
     }
     con = db()
     seen = {norm(json.loads(r["payload"]).get("farmer")) + "|" + norm(json.loads(r["payload"]).get("crop"))
@@ -763,6 +763,11 @@ def excel_upload():
             val = row[i] if i < len(row) else ""
             item[h] = "" if val is None else str(val)
         item["scheme"] = scheme
+        fid = str(item.get("Farmer ID") or "")
+        prefix = {"pkvy":"PKVY-F","natural":"NF-F","minikit":"MK-F","demo":"DEM-F"}.get(scheme)
+        if fid and prefix and not fid.startswith(prefix):
+            errors.append({"row": n, "field": "Farmer ID", "entered": fid, "type": "error", "detail": "This farmer does not belong to this scheme"})
+            continue
         item["farmer"] = item.get("Farmer Name") or item.get("farmer")
         item["crop"] = item.get("Crop") or item.get("crop")
         missing = [k for k in REQUIRED_BY.get(scheme, []) if str(item.get(k) or "").strip() == ""]
@@ -774,7 +779,7 @@ def excel_upload():
             errors.append({"row": n, "field": ", ".join(missing), "entered": item.get("Farmer Name") or "", "type": "error", "detail": ", ".join(missing) + " khali ya galat"})
             continue
         if key in seen:
-            errors.append({"row": n, "type": "duplicate", "detail": "किसान+फसल पहले से है"})
+            errors.append({"row": n, "type": "duplicate", "detail": "à¤•à¤¿à¤¸à¤¾à¤¨+à¤«à¤¸à¤² à¤ªà¤¹à¤²à¥‡ à¤¸à¥‡ à¤¹à¥ˆ"})
             continue
         seen.add(key)
         clean.append(item)
@@ -790,7 +795,7 @@ def excel_upload():
             (rid, u["id"], u["name"], u["role"], u["cluster"], str(item.get("Village") or ""), scheme,
              json.dumps(item, ensure_ascii=False), "submitted", now),
         )
-        add_history(con, rid, "submitted", "Excel से जमा", u["name"])
+        add_history(con, rid, "submitted", "Excel à¤¸à¥‡ à¤œà¤®à¤¾", u["name"])
         saved.append(rid)
     con.commit()
     con.close()
@@ -811,7 +816,7 @@ def excel_upload():
 def error_xlsx(eid):
     path = os.path.join(BASE, "data", eid + ".xlsx")
     if not os.path.exists(path):
-        return jsonify({"error": "एरर File is missing"}), 404
+        return jsonify({"error": "à¤à¤°à¤° File is missing"}), 404
     from flask import send_file
     return send_file(path, as_attachment=True, download_name="error-rows.xlsx")
 
