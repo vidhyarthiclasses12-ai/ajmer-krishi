@@ -546,6 +546,8 @@ def records():
         r["payload"] = json.loads(r["payload"] or "{}")
         r["photos"] = [dict(p) for p in con.execute("SELECT id, filename FROM photos WHERE record_id=?", (r["id"],)).fetchall()]
         r["history"] = [dict(h) for h in con.execute("SELECT status, note, by_name, at FROM history WHERE record_id=? ORDER BY at", (r["id"],)).fetchall()]
+        con.execute("CREATE TABLE IF NOT EXISTS signatures (id TEXT PRIMARY KEY, record_id TEXT, role TEXT, by_name TEXT, image TEXT, at TEXT)")
+        r["signatures"] = [dict(x) for x in con.execute("SELECT role, by_name, image, at FROM signatures WHERE record_id=?", (r["id"],)).fetchall()]
     allowed = SCHEME_BY_ROLE.get(u["role"])
     if allowed:
         rows = [r for r in rows if (r["payload"].get("scheme") in allowed) or r["form_type"] in allowed or r["form_type"] == "farmer_master"]
@@ -808,6 +810,10 @@ def workflow(rid):
         return jsonify({"error": "Invalid action"}), 400
     con.execute("UPDATE records SET status=? WHERE id=?", (new, rid))
     add_history(con, rid, new, note or action, u["name"])
+    sig = data.get("signature") or ""
+    if sig.startswith("data:image"):
+        con.execute("CREATE TABLE IF NOT EXISTS signatures (id TEXT PRIMARY KEY, record_id TEXT, role TEXT, by_name TEXT, image TEXT, at TEXT)")
+        con.execute("INSERT INTO signatures VALUES (?,?,?,?,?,?)", (uuid.uuid4().hex, rid, u["role"], u["name"], sig, datetime.now().isoformat(timespec="seconds")))
     try:
         audit(con, u, action, "record", rid, new)
     except Exception:
