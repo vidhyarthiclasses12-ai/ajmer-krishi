@@ -259,7 +259,10 @@ def lgd_tree():
 
 @app.get("/api/directory")
 def directory():
-    return jsonify({"district": "अजमेर", "tree": lgd_tree()})
+    try:
+        return jsonify({"district": "अजमेर", "tree": lgd_tree()})
+    except Exception:
+        return jsonify({"district": "अजमेर", "tree": {}})
 
 @app.post("/api/directory/village")
 @admin_required
