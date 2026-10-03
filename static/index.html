@@ -63,7 +63,7 @@ function login() {
     </div></div>`;
 }
 function shell() {
-  const items = [["dash","Dashboard"],["profile","User Profile"],["farmers","Farmers"],["forms","Information Forms"],["photos","Photos"],["reports","Reports"],["clusters","Clusters"],["users","Users"],["excel","Excel Import / Export"],["log","Activity Log"],["settings","Settings"]];
+  const items = [["dash","Dashboard"],["profile","Profile"],["farmers","Farmers"],["forms","Applications"],["photos","Documents"],["status","Status"],["notes","Notifications"],["reports","Reports"],["verify","Verification"],["clusters","Masters"],["users","Users & Roles"],["excel","Excel"],["log","Audit Log"],["settings","Settings"]];
   return `<div class="app"><aside><h2>MENU</h2>${items.map(([id,label]) => `<button data-t="${id}" class="${tab===id?"active":""}">${label}</button>`).join("")}</aside>
     <main><header><b>Ajmer Agriculture Information</b><span>${me.name} · ${postOf(me.role)} <button id="out" class="line">Logout</button></span></header>
     <div class="content" id="panel"></div></main></div>`;
@@ -72,9 +72,12 @@ async function show(name) {
   tab = name;
   document.querySelectorAll("aside button").forEach(b => b.classList.toggle("active", b.dataset.t===name));
   const panel = document.getElementById("panel");
-  const rows = ["dash","farmers","forms","photos","reports","log"].includes(name) ? await api("/api/records") : [];
+  const rows = ["dash","farmers","forms","photos","reports","log","status","notes","verify"].includes(name) ? await api("/api/records") : [];
   if (name==="profile") panel.innerHTML = profileView();
   if (name==="dash") panel.innerHTML = dash(rows);
+  if (name==="status") panel.innerHTML = statusView(rows);
+  if (name==="notes") panel.innerHTML = notesView(rows);
+  if (name==="verify") panel.innerHTML = (me.role==="admin"||me.role==="district_admin") ? verifyView(rows) : `<div class="card">Verification System Admin aur District Admin ke liye hai.</div>`;
   if (name==="farmers") panel.innerHTML = farmerTable(rows);
   if (name==="forms") panel.innerHTML = formView(rows);
   if (name==="photos") panel.innerHTML = gallery(rows);
@@ -109,9 +112,10 @@ function dash(rows) {
   return `<h2 style="margin:0">Dashboard</h2><p class="muted">Information collection overview</p>
     <div class="stats">
       <div class="stat"><span class="muted">Total Farmers</span><b>${farmers}</b></div>
-      <div class="stat"><span class="muted">Total Forms</span><b>${rows.length}</b></div>
+      <div class="stat"><span class="muted">Applications</span><b>${rows.length}</b></div>
+      <div class="stat"><span class="muted">Pending</span><b>${rows.filter(r=>r.status==="submitted"||r.status==="resubmitted").length}</b></div>
       <div class="stat"><span class="muted">Approved</span><b>${approved}</b></div>
-      <div class="stat"><span class="muted">Correction Required</span><b>${corr}</b></div>
+      <div class="stat"><span class="muted">Rejected / Correction</span><b>${corr}</b></div>
     </div>
     <div class="grid">
       <div class="card"><h3>Quick Actions</h3>
@@ -128,6 +132,26 @@ function table(rows) {
   return `<table><tr><th>Date</th><th>Farmer</th><th>Cluster</th><th>Crop</th><th>Status</th></tr>
     ${rows.map(r => `<tr><td>${(r.created_at||"").slice(0,16)}</td><td>${r.payload.farmer||"—"}</td><td>${r.cluster}</td><td>${r.payload.crop||""}</td><td><span class="pill">${r.status}</span></td></tr>`).join("")}</table>`;
 }
+function statusView(rows) {
+  return `<div class="card"><h3>Application Status</h3><input id="qst" placeholder="Application no / farmer" oninput="filterCards(this)" />
+    ${rows.map(r=>`<div class="card" data-q="${(r.payload.application_no||"")+" "+(r.payload.farmer||"")}"><b>${r.payload.application_no||r.id.slice(0,8)}</b> · ${r.payload.farmer||""} · ${r.payload.scheme||"Information Form"} <span class="pill">${r.status}</span>
+      <div class="muted">Submitted → Verification → ${r.status}</div>
+      <div class="muted">${(r.history||[]).map(h=>h.at.slice(0,16)+" · "+h.status+" · "+(h.note||"")).join("<br>")}</div></div>`).join("")||"<p class='muted'>No records found.</p>"}</div>`;
+}
+function notesView(rows) {
+  const notes = rows.flatMap(r => (r.history||[]).map(h => ({...h, app:r.payload.application_no||r.id.slice(0,8), farmer:r.payload.farmer})));
+  return `<div class="card"><h3>Notifications</h3>${notes.map(n=>`<div style="padding:8px 0;border-bottom:1px solid #eee"><b>${n.app}</b> · ${n.farmer||""}<br><span class="muted">${n.at.slice(0,16)} · ${n.status} · ${n.note||""}</span></div>`).join("")||"<p class='muted'>No notifications.</p>"}</div>`;
+}
+function verifyView(rows) {
+  return `<div class="card"><h3>Verification Queue</h3>${rows.map(r=>`<div style="border-bottom:1px solid #eee;padding:8px 0"><b>${r.payload.application_no||r.id.slice(0,8)}</b> · ${r.payload.farmer||""} · ${r.cluster} · ${r.village||""} <span class="pill">${r.status}</span>
+    <div class="muted">${r.payload.crop||""} · ${r.payload.scheme||""}</div>
+    ${r.photos.map(p=>`<img class="ph" src="/api/photos/${p.id}"/>`).join("")}
+    <label>Remark</label><input id="rm-${r.id}" />
+    <button class="go" data-st="${r.id}" data-s="approved">Approve</button>
+    <button class="line" data-st="${r.id}" data-s="correction_required">Send back</button>
+    <button class="bad" data-st="${r.id}" data-s="rejected">Reject</button>
+  </div>`).join("")||"<p class='muted'>No records found.</p>"}</div>`;
+}
 function farmerTable(rows) {
   const map = {};
   rows.forEach(r => { const n = r.payload.farmer; if (n) map[n+"|"+r.cluster] = r; });
@@ -136,11 +160,18 @@ function farmerTable(rows) {
 }
 function formView(rows) {
   const opts = Object.keys(blocks).map(b => `<option value="${b}" ${b===me.cluster?"selected":""}>${b}</option>`).join("");
-  return `<div class="card"><h3>+ New Information</h3>
+  const teh = Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("");
+  return `<div class="card"><h3>New Application</h3>
     <div class="grid">
-      <div><label>Cluster</label><select id="cluster" ${me.role==="admin"?"":"disabled"}>${opts}</select></div>
+      <div><label>Scheme</label><select id="scheme"><option>Natural Farming Yield</option><option>Farmer Registration</option><option>Other</option></select></div>
+      <div><label>Cluster</label><select id="cluster" ${me.role==="admin"||me.role==="district_admin"?"":"disabled"}>${opts}</select></div>
+      <div><label>Tehsil</label><select id="fteh">${teh}</select></div>
+      <div><label>Gram Panchayat</label><select id="fgp"></select></div>
       <div><label>Village</label><select id="village"></select></div>
       <div><label>Farmer</label><input id="farmer" /></div>
+      <div><label>Father / Husband</label><input id="father" /></div>
+      <div><label>Mobile</label><input id="fmobile" /></div>
+      <div><label>Category</label><select id="category"><option>General</option><option>SC</option><option>ST</option><option>OBC</option></select></div>
       <div><label>Crop</label><input id="crop" /></div>
       <div><label>Kind</label><select id="kind"><option>अनाज</option><option>तिलहन</option><option>दलहन</option><option>अन्य</option></select></div>
       <div><label>Area (ha)</label><input id="area" type="number" step="0.01" /></div>
@@ -208,10 +239,12 @@ async function userView() {
     <div class="card"><h3>Reset password</h3><label>Username</label><input id="ru2" /><label>New password</label><input id="rp2" /><button class="go" id="doreset">Reset</button></div>`;
 }
 function fillVillages() {
-  const b = document.getElementById("cluster");
-  if (!b) return;
-  const places = (blocks[b.value] && blocks[b.value].places) || [];
-  document.getElementById("village").innerHTML = places.map(v=>`<option>${v.village}</option>`).join("");
+  const teh = document.getElementById("fteh");
+  const gp = document.getElementById("fgp");
+  const vill = document.getElementById("village");
+  if (!teh || !gp || !vill) return;
+  gp.innerHTML = Object.keys((window.LGD||{})[teh.value]||{}).map(g=>`<option>${g}</option>`).join("");
+  vill.innerHTML = (((window.LGD||{})[teh.value]||{})[gp.value]||[]).map(v=>`<option>${v}</option>`).join("");
 }
 function wire() {
   fillVillages();
@@ -219,7 +252,7 @@ function wire() {
   if (c) c.onchange = fillVillages;
   const save = document.getElementById("save");
   if (save) save.onclick = async () => {
-    const payload = { farmer:farmer.value, crop:crop.value, kind:kind.value, area:area.value, yieldType:ytype.value, yield:yield.value };
+    const payload = { application_no:"AJM-"+Date.now().toString().slice(-8), scheme:scheme.value, farmer:farmer.value, father:father.value, mobile:fmobile.value, category:category.value, tehsil:fteh.value, gp:fgp.value, crop:crop.value, kind:kind.value, area:area.value, yieldType:ytype.value, yield:yield.value };
     if (!payload.farmer || !payload.crop) return alert("Farmer and crop are required");
     const rec = await api("/api/records", { method:"POST", body: JSON.stringify({ cluster: cluster.value, village: village.value, form_type:"Information Form", payload }) });
     const file = document.getElementById("photo").files[0];
@@ -233,10 +266,13 @@ function wire() {
     document.getElementById("xr").innerHTML = `<p>${res.saved} rows saved.</p>` + res.errors.map(e=>`<p style="color:#b91c1c">Row ${e.row}: ${e.detail}</p>`).join("");
   };
   document.querySelectorAll("[data-st]").forEach(b => b.onclick = async () => {
-    const status = document.getElementById("st-"+b.dataset.st).value;
+    const status = b.dataset.s || (document.getElementById("st-"+b.dataset.st)||{}).value;
     if (!status) return;
-    await api("/api/records/"+b.dataset.st+"/status", { method:"POST", body: JSON.stringify({ status, note:"" }) });
-    show("reports");
+    const noteEl = document.getElementById("rm-"+b.dataset.st);
+    const note = noteEl ? noteEl.value : "";
+    if ((status==="rejected" || status==="correction_required") && !note) return alert("Remark likhna zaroori hai");
+    await api("/api/records/"+b.dataset.st+"/status", { method:"POST", body: JSON.stringify({ status, note }) });
+    show("verify");
   });
   document.querySelectorAll("[data-del]").forEach(b => b.onclick = async () => {
     if (!confirm("Delete this login?")) return;
@@ -296,6 +332,7 @@ function wire() {
   const dr = document.getElementById("doreset");
   if (dr) dr.onclick = async () => { await api("/api/admin/reset", { method:"POST", body: JSON.stringify({ username:ru2.value, password:rp2.value }) }); alert("Password updated"); };
 }
+function filterCards(el){ document.querySelectorAll('[data-q]').forEach(n=>n.style.display=n.dataset.q.toLowerCase().includes(el.value.toLowerCase())?'':'none'); }
 function bind() {
   const go = document.getElementById("go");
   if (go) {
