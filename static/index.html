@@ -79,7 +79,7 @@ async function show(name){
 }
 function allowedSchemes(){
   if(me.role==="lrp") return ["pkvy"];
-  if(me.role==="krishi_sakhi"||me.role==="crp") return ["natural"];
+  if(me.role==="krishi_sakhi"||me.role==="crp") return ["pkvy","natural"];
   if(me.role==="supervisor") return ["pkvy","natural","minikit","demo"];
   return ["pkvy","natural","minikit","demo"];
 }
@@ -135,7 +135,7 @@ function verifyView(rows){
     const field = scheme==="pkvy"||scheme==="natural";
     if(me.role==="lrp") return field && (r.status==="submitted"||r.status==="returned");
     if(me.role==="crp") return field && r.status==="lrp_signed";
-    if(me.role==="krishi_sakhi") return field && r.status==="crp_signed";
+    if(me.role==="krishi_sakhi") return field && ["submitted","lrp_signed","crp_signed","returned"].includes(r.status);
     if(me.role==="aao") return r.status==="supervisor_signed" || r.status==="signed";
     if(me.role==="supervisor") return field ? r.status==="sakhi_signed" : (r.status==="submitted"||r.status==="draft"||r.status==="returned");
     return true;
