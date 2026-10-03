@@ -177,7 +177,18 @@ function wire(){
   if(mapGp) mapGp.onclick=async()=>{ const r=await api("/api/map/gp",{method:"POST", body:JSON.stringify({username:supUser.value, tehsil:steh.value, gp:sgp.value})}); alert("Cluster auto add: "+r.cluster); blocks=await api("/api/meta"); };
   const mapv=document.getElementById("mapv");
   if(mapv) mapv.onclick=async()=>{ await api("/api/directory/village",{method:"POST", body:JSON.stringify({tehsil:mteh.value, gp:mgp.value, village:mvill.value})}); window.LGD=(await api("/api/directory")).tree||{}; alert("Dropdown me aa gaya"); show("masters"); };
-  const add=document.getElementById("nuadd"); if(add) add.onclick=async()=>{ await api("/api/users",{method:"POST", body:JSON.stringify({name:nn.value, role:nr.value, cluster:ncl.value||"All", mobile:nm.value, username:nu.value, password:np.value})}); if(nr.value==="supervisor" && ngp.value){ const r=await api("/api/map/gp",{method:"POST", body:JSON.stringify({username:nu.value, tehsil:nteh.value, gp:ngp.value})}); alert("GP aur cluster assign: "+r.cluster);} show("users"); };
+  const add=document.getElementById("nuadd"); if(add) add.onclick=async()=>{
+    try {
+      const role=document.getElementById("nr").value;
+      const clusterEl=document.getElementById("ncl");
+      const cluster=clusterEl&&clusterEl.value&&!clusterEl.value.startsWith("Pehle")?clusterEl.value:"All";
+      if((role==="lrp"||role==="krishi_sakhi"||role==="crp") && cluster==="All") return alert("Pehle PKVY ya Natural Farming me cluster map karein");
+      await api("/api/users",{method:"POST", body:JSON.stringify({name:document.getElementById("nn").value, role, cluster, mobile:document.getElementById("nm").value, username:document.getElementById("nu").value, password:document.getElementById("np").value})});
+      if(role==="supervisor"){ const r=await api("/api/map/gp",{method:"POST", body:JSON.stringify({username:document.getElementById("nu").value, tehsil:document.getElementById("nteh").value, gp:document.getElementById("ngp").value})}); alert("GP aur cluster assign: "+r.cluster); }
+      else alert("User ban gaya");
+      show("users");
+    } catch(e) { alert(e.message); }
+  };
   document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ if(!confirm("Delete?")) return; await api("/api/users/"+b.dataset.del,{method:"DELETE"}); show("users"); });
 }
 function filterCards(el){ document.querySelectorAll("[data-q]").forEach(n=>n.style.display=n.dataset.q.toLowerCase().includes(el.value.toLowerCase())?"":"none"); }
