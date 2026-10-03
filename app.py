@@ -364,7 +364,7 @@ def admin_reset():
 def add_user():
     data = request.json or {}
     me = current()
-    allowed = ("krishi_sakhi", "crp") if me["role"] == "district_admin" else ("district_admin", "krishi_sakhi", "crp")
+    allowed = ("supervisor", "lrp", "krishi_sakhi", "crp") if me["role"] == "district_admin" else ("district_admin", "supervisor", "lrp", "krishi_sakhi", "crp")
     if data.get("role") not in allowed:
         return jsonify({"error": "District Admin sirf cluster user bana sakta hai"}), 403
     if len(data.get("password", "")) < 8:
@@ -409,11 +409,18 @@ def delete_user(uid):
     con.close()
     return jsonify({"ok": True})
 
+SCHEME_BY_ROLE = {
+    "lrp": {"pkvy"},
+    "krishi_sakhi": {"natural"},
+    "crp": {"natural"},
+    "supervisor": {"pkvy", "natural", "minikit", "demo"},
+}
+
 def can_see_all(u):
-    return u["role"] in ("admin", "district_admin")
+    return u["role"] in ("admin", "district_admin", "supervisor")
 
 def visible_sql(u):
-    if can_see_all(u):
+    if u["role"] in ("admin", "district_admin"):
         return "", []
     return " WHERE cluster=?", [u["cluster"]]
 
@@ -432,6 +439,9 @@ def records():
         r["payload"] = json.loads(r["payload"] or "{}")
         r["photos"] = [dict(p) for p in con.execute("SELECT id, filename FROM photos WHERE record_id=?", (r["id"],)).fetchall()]
         r["history"] = [dict(h) for h in con.execute("SELECT status, note, by_name, at FROM history WHERE record_id=? ORDER BY at", (r["id"],)).fetchall()]
+    allowed = SCHEME_BY_ROLE.get(u["role"])
+    if allowed:
+        rows = [r for r in rows if (r["payload"].get("scheme") in allowed) or r["form_type"] in allowed or r["form_type"] == "farmer_master"]
     con.close()
     return jsonify(rows)
 
@@ -440,9 +450,13 @@ def records():
 def create_record():
     u = current()
     data = request.json or {}
-    cluster = u["cluster"] if not can_see_all(u) else (data.get("cluster") or u["cluster"])
-    if not can_see_all(u) and data.get("cluster") and data.get("cluster") != u["cluster"]:
+    cluster = u["cluster"] if u["role"] not in ("admin", "district_admin") else (data.get("cluster") or u["cluster"])
+    if u["role"] not in ("admin", "district_admin") and data.get("cluster") and data.get("cluster") != u["cluster"]:
         return jsonify({"error": "आप केवल अपने क्लस्टर का डेटा भर सकते हैं"}), 403
+    scheme = (data.get("form_type") or "")
+    allowed = SCHEME_BY_ROLE.get(u["role"])
+    if allowed and scheme not in allowed and scheme != "farmer_master":
+        return jsonify({"error": "यह योजना आपके रोल में नहीं है"}), 403
     rid = uuid.uuid4().hex
     now = datetime.now().isoformat(timespec="seconds")
     con = db()
