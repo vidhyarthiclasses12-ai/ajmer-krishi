@@ -75,11 +75,6 @@ def init():
             ("u-admin", "admin", "System Admin", "All", "9000000000", "admin",
              generate_password_hash("Ajmer@2026")),
         )
-    con.execute("UPDATE users SET active=0 WHERE username IN ('clusterA','crpA')")
-    old_names = ("अजमेर ग्रामीण","बड़ल्या","पीसांगन","किशनगढ़ (सिलोरा)","नसीराबाद","श्रीनगर","अराई","भिनाय","केकड़ी","सरवाड़","सावर")
-    q = ",".join("?" * len(old_names))
-    con.execute("DELETE FROM places WHERE cluster_id IN (SELECT id FROM clusters WHERE name IN (%s))" % q, old_names)
-    con.execute("DELETE FROM clusters WHERE name IN (%s)" % q, old_names)
     con.commit()
     con.close()
 
@@ -223,6 +218,58 @@ def map_village():
     con.commit()
     con.close()
     return jsonify({"ok": True})
+
+@app.post("/api/map/cluster")
+@manager_required
+def map_cluster():
+    data = request.json or {}
+    scheme = data.get("scheme")
+    if scheme not in ("pkvy", "natural"):
+        return jsonify({"error": "सिर्फ PKVY या Natural Farming"}), 400
+    name = (data.get("name") or "").strip()
+    if not name:
+        return jsonify({"error": "क्लस्टर नाम लिखें"}), 400
+    con = db()
+    row = con.execute("SELECT id FROM clusters WHERE name=?", (name,)).fetchone()
+    cid = row["id"] if row else uuid.uuid4().hex
+    if not row:
+        con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (cid, "अजमेर", data.get("tehsil") or "", name))
+    con.execute("CREATE TABLE IF NOT EXISTS scheme_clusters (id TEXT PRIMARY KEY, scheme TEXT, cluster_id TEXT, gp TEXT)")
+    con.execute("INSERT INTO scheme_clusters VALUES (?,?,?,?)", (uuid.uuid4().hex, scheme, cid, data.get("gp") or ""))
+    for village in data.get("villages") or []:
+        con.execute("INSERT INTO places VALUES (?,?,?,?)", (uuid.uuid4().hex, cid, village, data.get("gp") or village))
+    con.commit()
+    con.close()
+    return jsonify({"ok": True, "id": cid})
+
+@app.post("/api/map/gp")
+@manager_required
+def map_gp():
+    data = request.json or {}
+    username = (data.get("username") or "").strip()
+    gp = (data.get("gp") or "").strip()
+    tehsil = (data.get("tehsil") or "").strip()
+    con = db()
+    user = con.execute("SELECT * FROM users WHERE username=? AND role='supervisor' AND active=1", (username,)).fetchone()
+    if not user:
+        con.close()
+        return jsonify({"error": "Agriculture Supervisor नहीं मिला"}), 404
+    con.execute("CREATE TABLE IF NOT EXISTS supervisor_gp (id TEXT PRIMARY KEY, user_id TEXT, tehsil TEXT, gp TEXT)")
+    con.execute("INSERT INTO supervisor_gp VALUES (?,?,?,?)", (uuid.uuid4().hex, user["id"], tehsil, gp))
+    cname = gp + " cluster"
+    row = con.execute("SELECT id FROM clusters WHERE name=?", (cname,)).fetchone()
+    cid = row["id"] if row else uuid.uuid4().hex
+    if not row:
+        con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (cid, "अजमेर", tehsil, cname))
+    tree = lgd_tree()
+    for village in (tree.get(tehsil) or {}).get(gp) or []:
+        exists = con.execute("SELECT 1 FROM places WHERE cluster_id=? AND village=?", (cid, village)).fetchone()
+        if not exists:
+            con.execute("INSERT INTO places VALUES (?,?,?,?)", (uuid.uuid4().hex, cid, village, gp))
+    con.execute("UPDATE users SET cluster=? WHERE id=?", (cname, user["id"]))
+    con.commit()
+    con.close()
+    return jsonify({"ok": True, "cluster": cname})
 
 @app.get("/api/meta")
 def meta():
