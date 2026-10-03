@@ -630,7 +630,13 @@ def excel_upload():
     headers = [str(c.value or "").strip() for c in next(ws.iter_rows(max_row=1))]
     missing_cols = [c for c in TEMPLATES.get(scheme, []) if c not in headers]
     if missing_cols:
-        return jsonify({"saved": 0, "errors": [{"row": 1, "type": "error", "detail": "कॉलम नहीं: " + ", ".join(missing_cols)}]})
+        err_id = uuid.uuid4().hex
+        ew = Workbook(); ews = ew.active
+        ews.append(["Row", "Field", "Entered", "Error", "Correction"])
+        ews.append([1, "Header", ", ".join(headers), "कॉलम नहीं मिले", "टेम्पलेट वाले कॉलम रखें: " + ", ".join(missing_cols)])
+        os.makedirs(os.path.join(BASE, "data"), exist_ok=True)
+        ew.save(os.path.join(BASE, "data", err_id + ".xlsx"))
+        return jsonify({"saved": 0, "errors": [{"row": 1, "type": "error", "detail": "कॉलम नहीं: " + ", ".join(missing_cols)}], "error_file": err_id, "message": "Excel header template se match nahi karta"})
     def col(*parts):
         for i, h in enumerate(headers):
             if any(p in h.lower() for p in parts):
@@ -651,14 +657,20 @@ def excel_upload():
     for n, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
         if not any(row):
             continue
-        item = {h: (row[i] if i < len(row) else "") for i, h in enumerate(headers)}
+        item = {}
+        for i, h in enumerate(headers):
+            val = row[i] if i < len(row) else ""
+            item[h] = "" if val is None else str(val)
         item["scheme"] = scheme
         item["farmer"] = item.get("Farmer Name") or item.get("farmer")
         item["crop"] = item.get("Crop") or item.get("crop")
         missing = [k for k in REQUIRED_BY.get(scheme, []) if str(item.get(k) or "").strip() == ""]
+        mobile = "".join(ch for ch in str(item.get("Mobile") or "") if ch.isdigit())
+        if mobile and len(mobile) != 10:
+            missing.append("Mobile 10 digit nahi")
         key = scheme + "|" + norm(item.get("Farmer Name")) + "|" + norm(item.get("Village")) + "|" + norm(item.get("Crop"))
         if missing:
-            errors.append({"row": n, "type": "error", "detail": ", ".join(missing) + " खाली"})
+            errors.append({"row": n, "field": ", ".join(missing), "entered": item.get("Farmer Name") or "", "type": "error", "detail": ", ".join(missing) + " khali ya galat"})
             continue
         if key in seen:
             errors.append({"row": n, "type": "duplicate", "detail": "किसान+फसल पहले से है"})
@@ -682,13 +694,13 @@ def excel_upload():
     if errors:
         ew = Workbook()
         ews = ew.active
-        ews.append(["Row", "Field", "Entered", "Error"])
+        ews.append(["Row", "Field", "Entered", "Error", "Correction"])
         for e in errors:
-            ews.append([e.get("row"), e.get("detail"), "", e.get("type")])
+            ews.append([e.get("row"), e.get("field") or e.get("detail"), e.get("entered"), e.get("type"), e.get("detail")])
         err_id = uuid.uuid4().hex
         os.makedirs(os.path.join(BASE, "data"), exist_ok=True)
         ew.save(os.path.join(BASE, "data", err_id + ".xlsx"))
-    return jsonify({"saved": len(saved), "errors": errors, "error_file": err_id})
+    return jsonify({"saved": len(saved), "errors": errors, "error_file": err_id, "message": f"{len(saved)} saved, {len(errors)} error"})
 
 @app.get("/api/errors/<eid>")
 @login_required
