@@ -48,11 +48,11 @@ async function api(url, opt={}) {
 }
 async function boot(){ me=await fetch("/api/me").then(r=>r.json()); if(me){ realRole=me.role; blocks=await api("/api/meta"); window.LGD=(await api("/api/directory")).tree||{}; } render(); }
 function render(){ document.getElementById("app").innerHTML = me? shell(): login(); bind(); }
-function login(){ return `<div class="card login"><h2 style="color:#166534">Ajmer Agriculture Information</h2><label>Username</label><input id="u"/><label>Password</label><input id="p" type="password"/><p id="err" style="color:#b91c1c"></p><button class="go" id="go" style="width:100%">Login</button><p style="font-size:12px;color:#6b7280">Help: जिला कृषि कार्यालय, अजमेर · Version 1.0</p></div>`; }
+function login(){ return `<div class="card login"><h2 style="color:#166534">Ajmer Agriculture Information</h2><label>Username</label><input id="u"/><label>Password</label><input id="p" type="password"/><p id="err" style="color:#b91c1c"></p><button class="go" id="go" style="width:100%">Login</button><p style="font-size:12px;color:#6b7280">Help: District Agriculture Office, Ajmer · Version 1.0</p></div>`; }
 function shell(){
   const items = scheme? SCHEMES[scheme].menu.map(m=>[m,m]) : [["home","Dashboard"],["farmers","Farmer Master"],["users","Users & Roles"],["masters","Master Data"],["excel","Excel"],["log","Audit Log"],["settings","Settings"]];
   return `<div class="app"><aside><b>KRISHI WEB APP</b>${items.map(([id,label])=>`<button data-t="${id}" class="${tab===id?"active":""}">${label}</button>`).join("")}${scheme?`<button id="back">Main Dashboard</button>`:""}</aside>
-  <main><header><div><b>Ajmer Agriculture Information</b><div style="font-size:12px;color:#6b7280">${scheme?SCHEMES[scheme].full:"Department of Agriculture"} · FY ${year}</div></div>
+  <main><header><div><b>Ajmer Agriculture Information</b><div style="font-size:12px;color:#6b7280">${scheme?SCHEMES[scheme].full:"Department of Agriculture, Ajmer"} · FY ${year}</div></div>
   <span>${realRole==="admin"?`<select id="viewAs"><option value="admin">System Admin</option><option value="district_admin">District Admin</option><option value="aao">AAO</option><option value="supervisor">Supervisor</option><option value="lrp">LRP</option><option value="crp">CRP</option><option value="krishi_sakhi">Krishi Sakhi</option></select>`:""}<select id="fy"><option>2025-26</option><option selected>2026-27</option><option>2027-28</option></select> ${me.name} · ${me.role} <button id="out" class="line">Logout</button></span></header>
   <div class="content" id="panel"></div></main></div>`;
 }
@@ -67,7 +67,7 @@ async function show(name){
   else if(name==="users"||name==="Users & Roles") panel.innerHTML=await userView();
   else if(name==="masters"||name==="Master Data") panel.innerHTML=clusterView(await api("/api/users"));
   else if(name==="Bulk Upload") panel.innerHTML=excelView();
-  else if(name==="Complete") panel.innerHTML=(me.role==="supervisor"||me.role==="aao"||me.role==="admin")?verifyView(mine):`<div class="card">Complete aur verification sirf Supervisor aur Assistant Agriculture Officer ke liye hai.</div>`;
+  else if(name==="Complete") panel.innerHTML=(me.role==="supervisor"||me.role==="aao"||me.role==="admin")?verifyView(mine):`<div class="card">Complete and verification are only for the Supervisor and the Assistant Agriculture Officer.</div>`;
   else if(name==="log"||name==="Audit Log") panel.innerHTML=logView(rows);
   else if(name==="settings"||name==="Settings") panel.innerHTML=`<div class="card"><h3>Settings</h3><p>Financial year upar se badlega. Purana saal ka data delete nahi hota.</p></div>`;
   else if(name==="Dashboard") panel.innerHTML=schemeDash(mine);
@@ -87,11 +87,11 @@ function home(rows){
   const c=k=>rows.filter(r=>(r.payload.scheme||"")===k && (r.payload.year||"2026-27")===year);
   const keys=allowedSchemes();
   const lines={pkvy:["Farmers "+c("pkvy").length,"Pending "+c("pkvy").filter(r=>r.status==="submitted").length], natural:["Farmers "+c("natural").length], minikit:["Distributed "+c("minikit").length], demo:["Planned "+c("demo").length]};
-  return `<h2>Main Dashboard</h2><p style="color:#6b7280">${me.role==="supervisor"?"Agriculture Supervisor · apni gram panchayat ki sabhi scheme":me.role==="lrp"?"LRP · sirf PKVY":me.role==="krishi_sakhi"||me.role==="crp"?"Sirf Natural Farming":"Sabhi scheme"}</p><div class="schemes">${keys.map(k=>card(k, lines[k])).join("")}</div>`;
+  return `<h2>Main Dashboard</h2><p style="color:#6b7280">${me.role==="supervisor"?"Agriculture Supervisor · apni gram panchayat ki sabhi scheme":me.role==="lrp"?"LRP · sirf PKVY":me.role==="krishi_sakhi"||me.role==="crp"?"Natural Farming only":"All schemes"}</p><div class="schemes">${keys.map(k=>card(k, lines[k])).join("")}</div>`;
 }
 function schemeDash(rows){
   const map = (scheme==="pkvy"||scheme==="natural") && (me.role==="admin"||me.role==="district_admin") ? `<div class="card"><h3>Cluster map</h3><div class="grid">${lgdSelects()}<div><label>Cluster name</label><input id="mapName"/></div></div><button class="go" id="mapCluster">Map cluster</button></div>` : "";
-  const mapped=Object.entries(blocks).filter(([n,c])=>(c.schemes||[]).includes(scheme)).map(([n,c])=>`<div>${n} · ${c.gp||c.block||""}</div>`).join("")||"<p class='muted'>Abhi koi mapped cluster nahi</p>";
+  const mapped=Object.entries(blocks).filter(([n,c])=>(c.schemes||[]).includes(scheme)).map(([n,c])=>`<div>${n} · ${c.gp||c.block||""}</div>`).join("")||"<p class='muted'>No mapped cluster yet</p>";
   return `<div class="card"><h3>Mapped clusters</h3>${mapped}</div><div class="card"><h3>${SCHEMES[scheme].title} Dashboard</h3><div class="schemes">
     <div class="stat">Records ${rows.length}</div><div class="stat">Pending ${rows.filter(r=>r.status==="submitted").length}</div>
     <div class="stat">Approved ${rows.filter(r=>r.status==="approved").length}</div><div class="stat">Rejected ${rows.filter(r=>r.status==="rejected").length}</div>
@@ -124,7 +124,7 @@ function verifyView(rows){
     return true;
   });
   return `<div class="card"><h3>${me.role==="aao"?"AAO verification":"Supervisor complete"}</h3>
-    <p class="muted">${mine.length} record. Neeche sign banayein ya photo upload karein, phir Sign & submit.</p>
+    <p class="muted">${mine.length} record. Draw a signature or upload a photo below, then Sign and submit.</p>
     ${mine.map(r=>`<div style="border-bottom:1px solid #eee;padding:10px 0"><b>${r.payload.application_no||r.id.slice(0,6)}</b> ${r.payload.farmer||r.payload["Farmer Name"]||""} · ${r.payload.Village||r.village||""} <span class="pill">${r.status}</span>
       <label>Remark</label><input id="rm-${r.id}"/>
       <label>Draw signature</label><canvas id="sig-${r.id}" width="280" height="80" style="border:1px solid #ccc;background:#fff"></canvas>
@@ -132,7 +132,7 @@ function verifyView(rows){
       <label>Ya signature photo</label><input id="sigf-${r.id}" type="file" accept="image/*"/>
       <button class="go" data-wf="${r.id}" data-a="sign">Sign & submit</button>
       <button class="line" data-wf="${r.id}" data-a="return">Return</button>
-    </div>`).join("")||"<p>Is role par pending record nahi. Supervisor sign ke baad hi AAO ko dikhega.</p>"}</div>`;
+    </div>`).join("")||"<p>No pending records. They appear for AAO only after the supervisor signs.</p>"}</div>`;
 }
 function reportView(rows){
   const ready=rows.filter(r=>r.status==="aao_approved"||me.role==="admin");
@@ -151,26 +151,26 @@ function clusterView(users=[]){
     <div class="grid"><div><label>Tehsil</label><select id="mteh">${tehs}</select></div>
     <div><label>Gram Panchayat</label><select id="mgp"></select></div>
     <div><label>Village name</label><input id="mvill"/></div></div>
-    <button class="go" id="mapv">Add to dropdown</button></div>` : `<div class="card">Village map sirf System Admin karega. Aap dropdown use karein.</div>`;
-  const gpMap = (me.role==="admin"||me.role==="district_admin") ? `<div class="card"><h3>Supervisor GP map</h3><p>GP map karte hi us GP ka cluster aur gaon auto jud jayenge.</p><label>Supervisor</label><select id="supUser">${users.filter(u=>u.role==="supervisor"&&u.active!==0).map(u=>`<option value="${u.username}">${u.name} · ${u.username}</option>`).join("")||"<option value=\"\">Pehle supervisor banayein</option>"}</select><div class="grid"><div><label>Tehsil</label><select id="steh">${Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("")}</select></div><div><label>Gram Panchayat</label><select id="sgp"></select></div></div><button class="go" id="mapGp">Map GP</button></div>` : "";
+    <button class="go" id="mapv">Add to dropdown</button></div>` : `<div class="card">Only System Admin can map a village. Use the dropdown.</div>`;
+  const gpMap = (me.role==="admin"||me.role==="district_admin") ? `<div class="card"><h3>Supervisor GP map</h3><p>Mapping a GP will automatically add its cluster and villages.</p><label>Supervisor</label><select id="supUser">${users.filter(u=>u.role==="supervisor"&&u.active!==0).map(u=>`<option value="${u.username}">${u.name} · ${u.username}</option>`).join("")||"<option value=\"\">Create a supervisor first</option>"}</select><div class="grid"><div><label>Tehsil</label><select id="steh">${Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("")}</select></div><div><label>Gram Panchayat</label><select id="sgp"></select></div></div><button class="go" id="mapGp">Map GP</button></div>` : "";
   return `<div class="card"><h3>Master Data</h3><p>Tehsil ${Object.keys(window.LGD||{}).length}</p></div>${map}${gpMap}`;
 }
 function excelView(){ const key=scheme||"pkvy"; return `<div class="card"><h3>${scheme?SCHEMES[scheme].title:"Scheme"} Excel</h3><p><a href="/api/template?scheme=${key}">Download ${key} template</a></p><input id="xf" type="file" accept=".xlsx,.jpg,.jpeg,.png"/><button class="go" id="xu">Upload Excel</button><div id="xr"></div><p>Photo alag se form me camera/gallery se lagegi.</p></div>`; }
 function logView(rows){ const logs=rows.flatMap(r=>(r.history||[]).map(h=>`<tr><td>${h.at.slice(0,16)}</td><td>${h.by_name}</td><td>${h.status}</td><td>${h.note||""}</td></tr>`)); return `<div class="card"><h3>Audit Log</h3><table><tr><th>Time</th><th>User</th><th>Status</th><th>Remark</th></tr>${logs.join("")}</table></div>`; }
-async function userView(){ if(me.role!=="admin"&&me.role!=="district_admin") return `<div class="card">Users System Admin aur District Admin dekh sakte hain.</div>`; const users=await api("/api/users"); return `<div class="card"><h3>New user</h3><div class="grid"><div><label>Name</label><input id="nn"/></div><div><label>Role</label><select id="nr">${me.role==="admin"?'<option value="district_admin">District Admin</option>':''}<option value="aao">Assistant Agriculture Officer</option><option value="supervisor">Agriculture Supervisor</option><option value="lrp">LRP · PKVY</option><option value="krishi_sakhi">Krishi Sakhi · Natural Farming</option><option value="crp">CRP · Natural Farming</option></select></div><div id="clusterBox"><label>Mapped cluster</label><select id="ncl"></select></div><div id="postBox"><label>Post</label><input id="npost" placeholder="Agriculture Research Officer"/></div><div><label>Mobile</label><input id="nm"/></div><div><label>Username</label><input id="nu"/></div><div><label>Password</label><input id="np"/></div></div><div id="supGpBox"><label>Supervisor GP assign</label><div class="grid"><div><label>Tehsil</label><select id="nteh">${Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("")}</select></div><div><label>Gram Panchayat</label><select id="ngp"></select></div></div></div><button class="go" id="nuadd">Add</button><div>${users.filter(u=>u.active!==0).map(u=>`<div>${u.name} · ${u.role} · ${u.username} ${me.role==="admin"&&u.id!==me.id?`<button class="bad" data-del="${u.id}">Delete</button>`:""}</div>`).join("")}</div></div>`; }
+async function userView(){ if(me.role!=="admin"&&me.role!=="district_admin") return `<div class="card">Only System Admin and District Admin can manage users.</div>`; const users=await api("/api/users"); return `<div class="card"><h3>New user</h3><div class="grid"><div><label>Name</label><input id="nn"/></div><div><label>Role</label><select id="nr">${me.role==="admin"?'<option value="district_admin">District Admin</option>':''}<option value="aao">Assistant Agriculture Officer</option><option value="supervisor">Agriculture Supervisor</option><option value="lrp">LRP · PKVY</option><option value="krishi_sakhi">Krishi Sakhi · Natural Farming</option><option value="crp">CRP · Natural Farming</option></select></div><div id="clusterBox"><label>Mapped cluster</label><select id="ncl"></select></div><div id="postBox"><label>Post</label><input id="npost" placeholder="Agriculture Research Officer"/></div><div><label>Mobile</label><input id="nm"/></div><div><label>Username</label><input id="nu"/></div><div><label>Password</label><input id="np"/></div></div><div id="supGpBox"><label>Supervisor GP assign</label><div class="grid"><div><label>Tehsil</label><select id="nteh">${Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("")}</select></div><div><label>Gram Panchayat</label><select id="ngp"></select></div></div></div><button class="go" id="nuadd">Add</button><div>${users.filter(u=>u.active!==0).map(u=>`<div>${u.name} · ${u.role} · ${u.username} ${me.role==="admin"&&u.id!==me.id?`<button class="bad" data-del="${u.id}">Delete</button>`:""}</div>`).join("")}</div></div>`; }
 function fillVillages(){ const teh=document.getElementById("fteh"), gp=document.getElementById("fgp"), vill=document.getElementById("village"); if(!teh||!gp||!vill) return; const keep=gp.value; gp.innerHTML=Object.keys((window.LGD||{})[teh.value]||{}).map(g=>`<option ${g===keep?"selected":""}>${g}</option>`).join(""); vill.innerHTML=(((window.LGD||{})[teh.value]||{})[gp.value]||[]).map(v=>`<option>${v}</option>`).join(""); }
 async function saveRecord(status){
   const payload={ scheme, year, section:tab, application_no:(scheme||"GEN").toUpperCase()+"-"+Date.now().toString().slice(-8), farmer: (document.getElementById("farmer")||{}).value || (document.getElementById("searchFarmer")||{}).value, status };
   document.querySelectorAll("[id^='f-']").forEach(el=>payload[el.id.slice(2)]=el.value);
   const all=await api("/api/records");
   const same=all.filter(r=>(r.payload.scheme||r.form_type)===scheme && (r.payload.PKVYClusterID||r.cluster)=== (payload.PKVYClusterID||me.cluster));
-  if(scheme==="pkvy" && same.length>=25) return alert("PKVY cluster me 25 farmer se zyada nahi");
-  if(scheme==="natural" && same.length>=125) return alert("Natural Farming cluster me 125 farmer se zyada nahi");
+  if(scheme==="pkvy" && same.length>=25) return alert("A PKVY cluster cannot have more than 25 farmers");
+  if(scheme==="natural" && same.length>=125) return alert("A Natural Farming cluster cannot have more than 125 farmers");
   const rec=await api("/api/records",{method:"POST", body:JSON.stringify({ cluster:me.cluster, village:(document.getElementById("village")||{}).value||"", form_type:scheme||"common", payload })});
   const area=Number(payload.PKVYArea||payload.NaturalFarmingArea||payload.DemonstrationArea||payload.CropArea||0);
   const land=Number(payload.TotalLandArea||0);
-  if(land && area>land) return alert("Scheme area total land se badi nahi ho sakti");
-  if(Number(payload.InputQuantity||payload.Quantity||0)<0) return alert("Quantity negative nahi ho sakti");
+  if(land && area>land) return alert("Scheme area cannot be larger than total land");
+  if(Number(payload.InputQuantity||payload.Quantity||0)<0) return alert("Quantity cannot be negative");
   const file=document.getElementById("photo")&&document.getElementById("photo").files[0];
   if(file){ const fd=new FormData(); fd.append("photo", file); await api("/api/records/"+rec.id+"/photo",{method:"POST", body:fd}); }
   alert(status==="draft"?"Draft saved":"Submitted"); show(tab);
@@ -186,21 +186,21 @@ function wire(){
   const doPdf=document.getElementById("doPdf"); if(doPdf) doPdf.onclick=()=>{ const mask=document.getElementById("mask").checked; const w=window.open(""); w.document.write("<h2>"+SCHEMES[scheme].title+" signed report</h2><p>Jan Aadhaar "+(mask?"masked":"full")+"</p>"); w.print(); };
   const rev=document.getElementById("rev"); if(rev) rev.onclick=async()=>{ try{ const r=await api("/api/revert",{method:"POST", body:JSON.stringify({cluster:revC.value, reason:revR.value})}); alert(r.count+" records wapas bheje"); }catch(e){ alert(e.message);} };
   const sf=document.getElementById("saveFarmer"); if(sf) sf.onclick=async()=>{ await api("/api/records",{method:"POST", body:JSON.stringify({ cluster:me.cluster, village:village.value, form_type:"farmer_master", payload:{ farmer_id:"FRM-2026-"+Date.now().toString().slice(-6), farmer:farmer.value, father:father.value, mobile:fmobile.value, category:category.value, jan: (document.getElementById("jan")||{}).value||"", year }})}); show("farmers"); };
-  const loadF=document.getElementById("loadFarmer"); if(loadF) loadF.onclick=async()=>{ const rows=await api("/api/records"); const q=(searchFarmer.value||"").toLowerCase(); const f=rows.find(r=>r.form_type==="farmer_master" && ((r.payload.farmer_id||"")+(r.payload.farmer||"")+(r.payload.mobile||"")).toLowerCase().includes(q)); if(!f) return alert("Farmer master me nahi mila"); document.getElementById("masterBox").textContent="Loaded "+f.payload.farmer_id+" · "+f.payload.farmer+" · "+(f.payload.father||"")+" · "+(f.village||""); searchFarmer.value=f.payload.farmer_id; };
+  const loadF=document.getElementById("loadFarmer"); if(loadF) loadF.onclick=async()=>{ const rows=await api("/api/records"); const q=(searchFarmer.value||"").toLowerCase(); const f=rows.find(r=>r.form_type==="farmer_master" && ((r.payload.farmer_id||"")+(r.payload.farmer||"")+(r.payload.mobile||"")).toLowerCase().includes(q)); if(!f) return alert("Farmer was not found in Farmer Master"); document.getElementById("masterBox").textContent="Loaded "+f.payload.farmer_id+" · "+f.payload.farmer+" · "+(f.payload.father||"")+" · "+(f.village||""); searchFarmer.value=f.payload.farmer_id; };
   const sub=document.getElementById("submit"); if(sub) sub.onclick=()=>saveRecord("submitted");
   const dr=document.getElementById("draft"); if(dr) dr.onclick=()=>saveRecord("draft");
   document.querySelectorAll("canvas[id^=sig-]").forEach(c=>{ const ctx=c.getContext("2d"); let draw=false; c.onpointerdown=e=>{ draw=true; ctx.beginPath(); ctx.moveTo(e.offsetX,e.offsetY); }; c.onpointermove=e=>{ if(!draw) return; ctx.lineTo(e.offsetX,e.offsetY); ctx.stroke(); }; c.onpointerup=()=>draw=false; });
   document.querySelectorAll("[data-clear]").forEach(b=>b.onclick=()=>{ const c=document.getElementById("sig-"+b.dataset.clear); c.getContext("2d").clearRect(0,0,c.width,c.height); });
-  document.querySelectorAll("[data-wf]").forEach(b=>b.onclick=async()=>{ try{ const note=(document.getElementById("rm-"+b.dataset.wf)||{}).value||""; if(b.dataset.a==="return"&&!note) return alert("Reason likhna zaroori hai"); const canvas=document.getElementById("sig-"+b.dataset.wf); const file=(document.getElementById("sigf-"+b.dataset.wf)||{}).files; if(b.dataset.a==="sign" && canvas && !file?.[0]){ const blank=document.createElement("canvas"); blank.width=canvas.width; blank.height=canvas.height; if(canvas.toDataURL()===blank.toDataURL()) return alert("Pehle sign banayein ya photo upload karein"); }
-    await api("/api/workflow/"+b.dataset.wf,{method:"POST", body:JSON.stringify({action:b.dataset.a, note, actor:me.role, signature:canvas?canvas.toDataURL():""})}); alert("Sign save ho gaya"); show("Complete"); }catch(e){ alert(e.message);} });
+  document.querySelectorAll("[data-wf]").forEach(b=>b.onclick=async()=>{ try{ const note=(document.getElementById("rm-"+b.dataset.wf)||{}).value||""; if(b.dataset.a==="return"&&!note) return alert("A reason is required"); const canvas=document.getElementById("sig-"+b.dataset.wf); const file=(document.getElementById("sigf-"+b.dataset.wf)||{}).files; if(b.dataset.a==="sign" && canvas && !file?.[0]){ const blank=document.createElement("canvas"); blank.width=canvas.width; blank.height=canvas.height; if(canvas.toDataURL()===blank.toDataURL()) return alert("Draw a signature or upload a signature photo first"); }
+    await api("/api/workflow/"+b.dataset.wf,{method:"POST", body:JSON.stringify({action:b.dataset.a, note, actor:me.role, signature:canvas?canvas.toDataURL():""})}); alert("Signature saved"); show("Complete"); }catch(e){ alert(e.message);} });
   const fillMap=()=>{ const t=document.getElementById("mteh"), g=document.getElementById("mgp"); if(!t||!g) return; const keep=g.value; g.innerHTML=Object.keys((window.LGD||{})[t.value]||{}).map(x=>`<option ${x===keep?"selected":""}>${x}</option>`).join(""); };
   if(document.getElementById("mteh")){ fillMap(); document.getElementById("mteh").onchange=fillMap; document.getElementById("mgp").onchange=fillMap; }
   const mapCluster=document.getElementById("mapCluster");
-  if(mapCluster) mapCluster.onclick=async()=>{ const vill=document.getElementById("village"); const picked=vill?[...vill.selectedOptions].map(o=>o.value).filter(Boolean):[]; await api("/api/map/cluster",{method:"POST", body:JSON.stringify({scheme, name:mapName.value, tehsil:fteh.value, gp:fgp.value, villages:picked.length?picked:[vill.value]})}); blocks=await api("/api/meta"); alert("Cluster map ho gaya"); show("Dashboard"); };
+  if(mapCluster) mapCluster.onclick=async()=>{ const vill=document.getElementById("village"); const picked=vill?[...vill.selectedOptions].map(o=>o.value).filter(Boolean):[]; await api("/api/map/cluster",{method:"POST", body:JSON.stringify({scheme, name:mapName.value, tehsil:fteh.value, gp:fgp.value, villages:picked.length?picked:[vill.value]})}); blocks=await api("/api/meta"); alert("Cluster mapped"); show("Dashboard"); };
   const mapGp=document.getElementById("mapGp");
   if(document.getElementById("steh")){ const fill=()=>{ g=sgp; g.innerHTML=Object.keys((window.LGD||{})[steh.value]||{}).map(x=>`<option>${x}</option>`).join(""); }; fill(); steh.onchange=fill; }
   if(document.getElementById("nteh")){ const filln=()=>{ ngp.innerHTML=Object.keys((window.LGD||{})[nteh.value]||{}).map(x=>`<option>${x}</option>`).join(""); }; filln(); nteh.onchange=filln; }
-  const fillClusters=()=>{ const box=document.getElementById("ncl"); if(!box) return; const role=nr.value; const want=role==="lrp"?"pkvy":(role==="krishi_sakhi"||role==="crp")?"natural":""; box.innerHTML=Object.entries(blocks).filter(([n,c])=>!want||(c.schemes||[]).includes(want)).map(([n])=>`<option>${n}</option>`).join("")||"<option>Pehle scheme me cluster map karein</option>"; };
+  const fillClusters=()=>{ const box=document.getElementById("ncl"); if(!box) return; const role=nr.value; const want=role==="lrp"?"pkvy":(role==="krishi_sakhi"||role==="crp")?"natural":""; box.innerHTML=Object.entries(blocks).filter(([n,c])=>!want||(c.schemes||[]).includes(want)).map(([n])=>`<option>${n}</option>`).join("")||"<option>Map a cluster in the scheme first</option>"; };
   const toggleRole=()=>{
     if(!document.getElementById("nr")) return;
     const role=nr.value;
@@ -211,17 +211,17 @@ function wire(){
   if(document.getElementById("nr")){ toggleRole(); fillClusters(); nr.onchange=()=>{ toggleRole(); fillClusters(); }; }
   if(mapGp) mapGp.onclick=async()=>{ const r=await api("/api/map/gp",{method:"POST", body:JSON.stringify({username:supUser.value, tehsil:steh.value, gp:sgp.value})}); alert("Cluster auto add: "+r.cluster); blocks=await api("/api/meta"); };
   const mapv=document.getElementById("mapv");
-  if(mapv) mapv.onclick=async()=>{ await api("/api/directory/village",{method:"POST", body:JSON.stringify({tehsil:mteh.value, gp:mgp.value, village:mvill.value})}); window.LGD=(await api("/api/directory")).tree||{}; alert("Dropdown me aa gaya"); show("masters"); };
+  if(mapv) mapv.onclick=async()=>{ await api("/api/directory/village",{method:"POST", body:JSON.stringify({tehsil:mteh.value, gp:mgp.value, village:mvill.value})}); window.LGD=(await api("/api/directory")).tree||{}; alert("Added to the dropdown"); show("masters"); };
   const xu=document.getElementById("xu");
   if(xu) xu.onclick=async()=>{
     try{
       const file=document.getElementById("xf").files[0];
-      if(!file) return alert("Pehle Excel file chunein");
+      if(!file) return alert("Choose an Excel file first");
       const fd=new FormData();
       fd.append("file", file);
       fd.append("scheme", scheme||"pkvy");
       const res=await api("/api/excel",{method:"POST", body:fd});
-      document.getElementById("xr").innerHTML=`<p><b>${res.message||""}</b></p><p>${res.saved||0} saved. Invalid ${(res.errors||[]).length}</p>`+(res.errors||[]).map(e=>`<p style="color:#b91c1c">Row ${e.row}: ${e.detail}</p>`).join("")+(res.error_file?`<p><a class="go" href="/api/errors/${res.error_file}">Download error sheet</a></p>`:"<p>Koi error nahi</p>");
+      document.getElementById("xr").innerHTML=`<p><b>${res.message||""}</b></p><p>${res.saved||0} saved. Invalid ${(res.errors||[]).length}</p>`+(res.errors||[]).map(e=>`<p style="color:#b91c1c">Row ${e.row}: ${e.detail}</p>`).join("")+(res.error_file?`<p><a class="go" href="/api/errors/${res.error_file}">Download error sheet</a></p>`:"<p>No errors</p>");
     }catch(e){ alert(e.message); }
   };
   const add=document.getElementById("nuadd"); if(add) add.onclick=async()=>{
@@ -229,10 +229,10 @@ function wire(){
       const role=document.getElementById("nr").value;
       const clusterEl=document.getElementById("ncl");
       const cluster=clusterEl&&clusterEl.value&&!clusterEl.value.startsWith("Pehle")?clusterEl.value:"All";
-      if((role==="lrp"||role==="krishi_sakhi"||role==="crp"||role==="supervisor") && cluster==="All") return alert("Pehle cluster map karein");
+      if((role==="lrp"||role==="krishi_sakhi"||role==="crp"||role==="supervisor") && cluster==="All") return alert("Map a cluster first");
       await api("/api/users",{method:"POST", body:JSON.stringify({name:document.getElementById("nn").value, role, cluster, mobile:document.getElementById("nm").value, username:document.getElementById("nu").value, password:document.getElementById("np").value})});
       if(role==="supervisor"){ const r=await api("/api/map/gp",{method:"POST", body:JSON.stringify({username:document.getElementById("nu").value, tehsil:document.getElementById("nteh").value, gp:document.getElementById("ngp").value})}); alert("GP aur cluster assign: "+r.cluster); }
-      else alert("User ban gaya");
+      else alert("User created");
       show("users");
     } catch(e) { alert(e.message); }
   };
