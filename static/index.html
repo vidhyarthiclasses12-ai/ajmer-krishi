@@ -35,10 +35,10 @@
 <script>
 let me=null, blocks={}, scheme=null, tab="home", year="2026-27", realRole="";
 const SCHEMES={
-  pkvy:{title:"PKVY", full:"PKVY Master only", prefix:"PKVY-F", menu:["Dashboard","PKVY Master","Bulk Upload","Templates","Complete","Reports"]},
-  natural:{title:"Natural Farming", full:"Natural Farming Master only", prefix:"NF-F", menu:["Dashboard","Natural Farming Master","Bulk Upload","Templates","Complete","Reports"]},
-  minikit:{title:"Minikit", full:"Minikit Master only", prefix:"MK-F", menu:["Dashboard","Minikit Master","Bulk Upload","Templates","Complete","Reports"]},
-  demo:{title:"Demonstration", full:"Demonstration Master only", prefix:"DEM-F", menu:["Dashboard","Demonstration Master","Bulk Upload","Templates","Complete","Reports"]}
+  pkvy:{title:"PKVY", full:"PKVY Master only", prefix:"PKVY-F", menu:["Dashboard","PKVY Master","Bulk Upload","Submit Information","Complete","Reports"]},
+  natural:{title:"Natural Farming", full:"Natural Farming Master only", prefix:"NF-F", menu:["Dashboard","Natural Farming Master","Bulk Upload","Submit Information","Complete","Reports"]},
+  minikit:{title:"Minikit", full:"Minikit Master only", prefix:"MK-F", menu:["Dashboard","Minikit Master","Bulk Upload","Submit Information","Complete","Reports"]},
+  demo:{title:"Demonstration", full:"Demonstration Master only", prefix:"DEM-F", menu:["Dashboard","Demonstration Master","Bulk Upload","Submit Information","Complete","Reports"]}
 };
 async function api(url, opt={}) {
   const res = await fetch(url, { credentials:"same-origin", ...opt, headers: opt.body instanceof FormData ? undefined : { "Content-Type":"application/json", ...(opt.headers||{}) } });
@@ -64,7 +64,7 @@ async function show(name){
   const panel=document.getElementById("panel");
   if(!scheme && name==="home") panel.innerHTML=home(rows);
   else if(name.endsWith("Master")||name==="farmers") panel.innerHTML=schemeMaster(mine);
-  else if(name==="Templates") panel.innerHTML=templateView(mine);
+  else if(name==="Submit Information") panel.innerHTML=templateView(mine);
   else if(name==="users"||name==="Users & Roles") panel.innerHTML=await userView();
   else if(name==="masters"||name==="Master Data") panel.innerHTML=clusterView(await api("/api/users"));
   else if(name==="Bulk Upload"||name==="excel"||name==="Excel") panel.innerHTML=excelView();
@@ -129,8 +129,13 @@ function schemeMaster(rows){
   </div>`;
 }
 function templateView(rows){
-  const names={pkvy:["First Information","Activity Report","Verification","Result"], natural:["First Information","Sowing Report","Inspection","Result"], minikit:["First Information","Distribution","Result"], demo:["First Information","Sowing Report","Result"]};
-  return `<div class="card"><h3>${SCHEMES[scheme].title} templates</h3><p>Auto-fill only from this scheme master.</p>${(names[scheme]||[]).map(n=>`<div class="stat">${n}</div>`).join("")}</div>`;
+  const need=scheme==="natural"?125:scheme==="pkvy"?25:1;
+  const n=rows.length;
+  const ready=n>=need;
+  return `<div class="card"><h3>Submit Information</h3><p>Data comes from ${SCHEMES[scheme].title} Master. Farmers ${n}/${need}.</p>
+    <table><tr><th>ID</th><th>Name</th><th>Village</th><th>Cluster</th></tr>${rows.map(r=>`<tr><td>${r.payload.farmer_id||""}</td><td>${r.payload["Farmer Name"]||r.payload.farmer||""}</td><td>${r.payload.Village||r.village||""}</td><td>${r.payload["Cluster ID"]||r.cluster||""}</td></tr>`).join("")}</table>
+    ${ready?`<button class="go" id="sendSign">Submit for sign</button>`:`<p>Submit stays hidden until ${need} farmers are in this scheme.</p>`}
+  </div>`;
 }
 function schemeForm(name, rows){
   const common = ["Farmer ID","Farmer Name","Father/Husband Name","Gender","Category","Mobile","Jan Aadhaar","District","Tehsil","Block","Gram Panchayat","Village","Total Land Area"];
@@ -232,6 +237,7 @@ function wire(){
   };
   const rev=document.getElementById("rev"); if(rev) rev.onclick=async()=>{ try{ const r=await api("/api/revert",{method:"POST", body:JSON.stringify({cluster:revC.value, reason:revR.value})}); alert(r.count+" records wapas bheje"); }catch(e){ alert(e.message);} };
   document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=async()=>{ try{ await api("/api/records/"+b.dataset.edit+"/edit",{method:"POST", body:JSON.stringify({payload:{"Farmer Name":document.getElementById("e-name-"+b.dataset.edit).value, farmer:document.getElementById("e-name-"+b.dataset.edit).value, Village:document.getElementById("e-vill-"+b.dataset.edit).value, Mobile:document.getElementById("e-mob-"+b.dataset.edit).value, Crop:document.getElementById("e-crop-"+b.dataset.edit).value}})}); alert("Saved"); show("Edit data"); }catch(e){ alert(e.message);} });
+  const sendSign=document.getElementById("sendSign"); if(sendSign) sendSign.onclick=async()=>{ alert("Sent to Complete for signature"); show("Complete"); };
   const addMaster=document.getElementById("addMaster"); if(addMaster) addMaster.onclick=async()=>{ const n=Date.now().toString().slice(-6); await api("/api/records",{method:"POST", body:JSON.stringify({cluster:mcluster.value||me.cluster, village:mvillage.value, form_type:scheme, payload:{scheme, farmer_id:SCHEMES[scheme].prefix+"-"+n, "Farmer Name":mname.value, farmer:mname.value, Father:mfather.value, Mobile:mmob.value, Village:mvillage.value, GP:mgp2.value, "Cluster ID":mcluster.value}})}); alert("Saved in "+SCHEMES[scheme].title+" only"); show(SCHEMES[scheme].title+" Master"); };
   const sf=document.getElementById("saveFarmer"); if(sf) sf.onclick=async()=>{ await api("/api/records",{method:"POST", body:JSON.stringify({ cluster:me.cluster, village:village.value, form_type:"farmer_master", payload:{ farmer_id:"FRM-2026-"+Date.now().toString().slice(-6), farmer:farmer.value, father:father.value, mobile:fmobile.value, category:category.value, jan: (document.getElementById("jan")||{}).value||"", year }})}); show("farmers"); };
   const loadF=document.getElementById("loadFarmer"); if(loadF) loadF.onclick=async()=>{ const rows=await api("/api/records"); const q=(searchFarmer.value||"").toLowerCase(); const f=rows.find(r=>r.form_type==="farmer_master" && ((r.payload.farmer_id||"")+(r.payload.farmer||"")+(r.payload.mobile||"")).toLowerCase().includes(q)); if(!f) return alert("Farmer was not found in Farmer Master"); document.getElementById("masterBox").textContent="Loaded "+f.payload.farmer_id+" · "+f.payload.farmer+" · "+(f.payload.father||"")+" · "+(f.village||""); searchFarmer.value=f.payload.farmer_id; };
