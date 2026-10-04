@@ -822,13 +822,15 @@ def photo_excel():
     raw = f.read()
     if len(raw) > 8_000_000:
         return jsonify({"error": "Photo must be under 8 MB"}), 400
-    import subprocess, tempfile
+    import shutil, subprocess, tempfile
     path = tempfile.mktemp(suffix=".jpg")
     open(path, "wb").write(raw)
+    if not shutil.which("tesseract"):
+        return jsonify({"error": "Photo reader is not installed on this server. Deploy with the Docker file so Tesseract is available."}), 500
     try:
         text = subprocess.check_output(["tesseract", path, "stdout", "-l", "eng"], stderr=subprocess.DEVNULL, text=True)
-    except Exception:
-        text = ""
+    except Exception as exc:
+        return jsonify({"error": "Photo could not be read: " + str(exc)}), 400
     saved = 0
     con = db()
     now = datetime.now().isoformat(timespec="seconds")
