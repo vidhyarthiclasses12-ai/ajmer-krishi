@@ -35,10 +35,10 @@
 <script>
 let me=null, blocks={}, scheme=null, tab="home", year="2026-27", realRole="";
 const SCHEMES={
-  pkvy:{title:"PKVY", full:"PKVY Master only", prefix:"PKVY-F", menu:["Dashboard","PKVY Master","Bulk Upload","Submit Information","Complete","Reports"]},
-  natural:{title:"Natural Farming", full:"Natural Farming Master only", prefix:"NF-F", menu:["Dashboard","Natural Farming Master","Bulk Upload","Submit Information","Complete","Reports"]},
-  minikit:{title:"Minikit", full:"Minikit Master only", prefix:"MK-F", menu:["Dashboard","Minikit Master","Bulk Upload","Submit Information","Complete","Reports"]},
-  demo:{title:"Demonstration", full:"Demonstration Master only", prefix:"DEM-F", menu:["Dashboard","Demonstration Master","Bulk Upload","Submit Information","Complete","Reports"]}
+  pkvy:{title:"PKVY", full:"PKVY Master only", prefix:"PKVY-F", menu:["Dashboard","PKVY Master","First Information","Activity Report","Verification","Result","Bulk Upload","Complete","Reports"]},
+  natural:{title:"Natural Farming", full:"Natural Farming Master only", prefix:"NF-F", menu:["Dashboard","Natural Farming Master","First Information","Sowing Report","Inspection","Result","Bulk Upload","Complete","Reports"]},
+  minikit:{title:"Minikit", full:"Minikit Master only", prefix:"MK-F", menu:["Dashboard","Minikit Master","First Information","Distribution","Result","Bulk Upload","Complete","Reports"]},
+  demo:{title:"Demonstration", full:"Demonstration Master only", prefix:"DEM-F", menu:["Dashboard","Demonstration Master","First Information","Sowing Report","Result","Bulk Upload","Complete","Reports"]}
 };
 async function api(url, opt={}) {
   const res = await fetch(url, { credentials:"same-origin", ...opt, headers: opt.body instanceof FormData ? undefined : { "Content-Type":"application/json", ...(opt.headers||{}) } });
@@ -128,7 +128,7 @@ function schemeMaster(rows){
     <table><tr><th>ID</th><th>Name</th><th>Village</th><th>Cluster</th><th>Status</th></tr>${list.map(r=>`<tr><td>${r.payload.farmer_id||""}</td><td>${r.payload["Farmer Name"]||r.payload.farmer||""}</td><td>${r.payload.Village||""}</td><td>${r.payload["Cluster ID"]||""}</td><td>${r.status}</td></tr>`).join("")}</table>
   </div>`;
 }
-function templateView(rows){
+function templateView(rows, name){ name=name||"First Information";
   const need=scheme==="natural"?125:scheme==="pkvy"?25:1;
   const n=rows.length;
   const ready=n>=need;
