@@ -820,23 +820,17 @@ def photo_excel():
     if not f:
         return jsonify({"error": "Choose a photo"}), 400
     raw = f.read()
-    if len(raw) > 15_000_000:
-        return jsonify({"saved": 0, "message": "Photo must be under 15 MB"})
-    import io, shutil, subprocess, tempfile
-    from PIL import Image
-    path = tempfile.mktemp(suffix=".png")
-    try:
-        img = Image.open(io.BytesIO(raw)).convert("RGB")
-        img.thumbnail((1600, 1600))
-        img.save(path, "PNG")
-    except Exception:
-        open(path, "wb").write(raw)
+    if len(raw) > 8_000_000:
+        return jsonify({"error": "Photo must be under 8 MB"}), 400
+    import shutil, subprocess, tempfile
+    path = tempfile.mktemp(suffix=".jpg")
+    open(path, "wb").write(raw)
     if not shutil.which("tesseract"):
-        return jsonify({"saved": 0, "text": "", "message": "Photo reader is not installed on this server. In Render, set Environment to Docker and deploy the Dockerfile."})
+        return jsonify({"error": "Photo reader is not installed on this server. Deploy with the Docker file so Tesseract is available."}), 500
     try:
         text = subprocess.check_output(["tesseract", path, "stdout", "-l", "eng"], stderr=subprocess.DEVNULL, text=True)
     except Exception as exc:
-        return jsonify({"saved": 0, "text": "", "message": "Photo could not be read. Use a clear photo of the sheet, not a screenshot. " + str(exc)})
+        return jsonify({"error": "Photo could not be read: " + str(exc)}), 400
     saved = 0
     con = db()
     now = datetime.now().isoformat(timespec="seconds")
