@@ -5,29 +5,31 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ajmer Agriculture Information</title>
 <style>
-  :root { --side:#14532d; --bg:#f3f4f6; --line:#e5e7eb; }
+  :root { --side:#14532d; --bg:#f4f7f5; --line:#e5e7eb; --green:#166534; --orange:#d97706; --red:#b91c1c; --blue:#1d4ed8; }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:"Segoe UI",sans-serif; background:var(--bg); color:#111827; }
+  body { margin:0; font-family:Inter, "Segoe UI", sans-serif; background:var(--bg); color:#1f2937; }
   button, input, select, textarea { font:inherit; }
-  button { cursor:pointer; border:0; border-radius:8px; padding:8px 12px; font-weight:700; }
-  .go { background:#166534; color:#fff; } .line { background:#fff; border:1px solid #bbf7d0; color:#166534; } .bad { background:#fee2e2; color:#b91c1c; }
-  input, select, textarea { width:100%; border:1px solid var(--line); border-radius:8px; padding:8px; margin-top:4px; }
-  label { font-size:13px; font-weight:700; display:block; margin-top:8px; }
-  .app { display:grid; grid-template-columns:230px 1fr; min-height:100vh; }
-  aside { background:var(--side); color:#fff; padding:12px; }
-  aside button { display:block; width:100%; text-align:left; background:transparent; color:#d1fae5; margin-bottom:4px; }
-  aside button.active { background:#166534; color:#fff; }
-  header { background:#fff; border-bottom:1px solid var(--line); padding:12px 16px; display:flex; justify-content:space-between; gap:8px; align-items:center; }
-  .content { padding:16px; }
-  .card { background:#fff; border-radius:12px; padding:14px; border:1px solid #eef2f7; margin-bottom:12px; }
-  .schemes { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .stat { background:#f8fafc; border-radius:10px; padding:8px; }
-  .grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
-  .pill { background:#dcfce7; color:#166534; border-radius:99px; padding:2px 8px; font-size:11px; font-weight:700; }
-  table { width:100%; border-collapse:collapse; font-size:13px; }
-  td, th { text-align:left; padding:6px; border-bottom:1px solid var(--line); }
-  .login { max-width:420px; margin:40px auto; }
-  @media (max-width:800px) { .app { grid-template-columns:1fr; } .schemes,.grid { grid-template-columns:1fr; } aside { display:flex; overflow:auto; } aside button { width:auto; } }
+  button { border:0; border-radius:10px; padding:10px 14px; cursor:pointer; }
+  input, select, textarea { width:100%; border:1px solid #d1d5db; border-radius:10px; padding:10px 12px; background:#fff; }
+  .app { display:flex; min-height:100vh; }
+  aside { width:250px; background:var(--side); color:#fff; padding:18px 12px; }
+  aside b { display:block; padding:8px 10px 16px; letter-spacing:.04em; }
+  aside button { display:block; width:100%; text-align:left; background:transparent; color:#d1fae5; margin:4px 0; }
+  aside button.active, aside button.on { background:#166534; color:#fff; }
+  main { flex:1; }
+  header { display:flex; justify-content:space-between; gap:16px; align-items:center; background:#fff; padding:14px 20px; border-bottom:1px solid var(--line); }
+  .content { padding:20px; }
+  .card { background:#fff; border-radius:12px; box-shadow:0 8px 24px rgba(15,23,42,.06); padding:18px; margin-bottom:16px; }
+  .login { max-width:420px; margin:8vh auto; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .schemes, .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; }
+  .stat { background:#f8fafc; border-radius:12px; padding:14px; }
+  .go { background:var(--green); color:#fff; }
+  .line { background:#fff; border:1px solid #bbf7d0; color:var(--green); }
+  .bad { background:#fee2e2; color:var(--red); }
+  table { width:100%; border-collapse:collapse; }
+  th, td { text-align:left; padding:8px; border-bottom:1px solid var(--line); font-size:14px; }
+  @media (max-width:800px) { .app { display:block; } aside { width:100%; } .grid { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -48,7 +50,7 @@ async function api(url, opt={}) {
 }
 async function boot(){ render(); try{ me=await fetch("/api/me").then(r=>r.json()); if(!me||!me.role){ me=null; render(); return; } realRole=me.role; try{ blocks=await api("/api/meta"); }catch(e){ blocks={}; } try{ window.LGD=(await api("/api/directory")).tree||{}; }catch(e){ window.LGD={}; } try{ const only=allowedSchemes(); if(only.length===1){ scheme=only[0]; tab="Dashboard"; } }catch(e){} render(); }catch(e){ me=null; render(); } }
 function render(){ document.getElementById("app").innerHTML = me? shell(): login(); bind(); }
-function login(){ return `<div class="card login"><h2 style="color:#166534">Ajmer Agriculture Information</h2><label>Username</label><input id="u"/><label>Password</label><input id="p" type="password"/><p id="err" style="color:#b91c1c"></p><button class="go" id="go" style="width:100%">Login</button><p style="font-size:12px;color:#6b7280">Help: District Agriculture Office, Ajmer · Version 1.0</p></div>`; }
+function login(){ return `<div class="card login"><h2 style="color:#166534">Agriculture Information</h2><p>Farmer and scheme data management</p><label>User ID</label><input id="u"/><label>Password</label><input id="p" type="password"/><p id="err" style="color:#b91c1c"></p><button class="go" id="go" style="width:100%">Login</button><p style="font-size:12px;color:#6b7280">Version 1.0</p></div>`; }
 function shell(){
   const HI={"Dashboard":"डैशबोर्ड","Farmer Master":"किसान मास्टर","Users & Roles":"यूजर और रोल","Master Data":"मास्टर डेटा","Notifications":"सूचना","Audit Log":"ऑडिट","Settings":"सेटिंग","PKVY Master":"पीकेवीवाई मास्टर","Natural Farming Master":"प्राकृतिक खेती मास्टर","Farmer Payment List":"किसान भुगतान सूची","PGS Data Information":"पीजीएस जानकारी","Activity Report":"गतिविधि रिपोर्ट","Result":"परिणाम","Bulk Upload":"बल्क अपलोड","Complete":"पूर्ण","Reports":"रिपोर्ट","Logout":"लॉगआउट","Hindi":"English"};
   const label=m=>window.LANG==="hi"?(HI[m]||m):m;
@@ -65,7 +67,7 @@ async function show(name){
   const mine=scheme? rows.filter(r=>r.form_type!=="farmer_master" && ((r.payload.scheme||r.form_type)===scheme || (r.payload.scheme||"")===scheme)) : rows;
   const farmers=rows.filter(r=>r.form_type==="farmer_master");
   const panel=document.getElementById("panel");
-  if(!scheme && name==="home") panel.innerHTML=`<div class="card"><h2>Main Dashboard</h2><p>Schemes are in the left menu. Open Schemes to slide the list.</p></div>`;
+  if(!scheme && name==="home") panel.innerHTML=home(rows);
   else if(name.endsWith("Master")||name==="farmers") panel.innerHTML=schemeMaster(mine);
   else if(name==="Submit Information") panel.innerHTML=templateView(mine);
   else if(name==="users"||name==="Users & Roles") panel.innerHTML=await userView();
