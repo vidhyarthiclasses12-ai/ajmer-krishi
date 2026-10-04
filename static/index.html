@@ -129,7 +129,7 @@ function paymentView(rows){
   return `<div class="card"><h3>Farmer Payment List</h3><p>Select year. Amount is per hectare. Less land gets a lower amount.</p>
     <label>Year</label><select id="payYear"><option value="1">First year</option><option value="2">Second year</option><option value="3">Third year</option></select>
     <label>Farmer name with father</label><select id="payFarmer"><option value="">Select</option>${opts}</select>
-    <div class="grid"><div><label>Caste</label><input id="payCaste2"/></div><div><label>Category</label><select id="payCaste"><option>General</option><option>SC</option><option>ST</option><option>OBC</option></select></div>
+    <div class="grid"><div><label>Caste</label><input id="payCaste2"/></div><div><label>Category</label><select id="payCaste" autocomplete="off"><option>Gen</option><option>SC</option><option>ST</option><option>OBC</option></select></div>
     <div><label>Village</label><input id="payVillage"/></div><div><label>Area hectare</label><input id="payArea" type="number" step="0.01"/></div>
     <div><label>Aadhaar</label><input id="payAad"/></div><div><label>Jan Aadhaar</label><input id="payJan"/></div><div><label>Mobile</label><input id="payMob"/></div>
     <div><label>Bank account</label><input id="payAcc"/></div><div><label>IFSC</label><input id="payIfsc"/></div><div><label>Bank branch</label><input id="payBranch"/></div></div>
