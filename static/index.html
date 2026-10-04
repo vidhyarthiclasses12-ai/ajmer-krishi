@@ -43,7 +43,7 @@ const SCHEMES={
 async function api(url, opt={}) {
   const res = await fetch(url, { credentials:"same-origin", ...opt, headers: opt.body instanceof FormData ? undefined : { "Content-Type":"application/json", ...(opt.headers||{}) } });
   const data = await res.json().catch(()=>({}));
-  if (!res.ok) throw new Error(data.error||res.status+" sign failed");
+  if (!res.ok) throw new Error(data.error||res.status+" request failed");
   return data;
 }
 async function boot(){ try{ me=await fetch("/api/me").then(r=>r.json()); if(me){ realRole=me.role; blocks=await api("/api/meta"); try{ window.LGD=(await api("/api/directory")).tree||{}; }catch(e){ window.LGD={}; } } }catch(e){ me=null; } render(); }
