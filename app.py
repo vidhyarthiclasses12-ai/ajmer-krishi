@@ -397,6 +397,27 @@ def add_cluster():
     con.close()
     return jsonify({"ok": True})
 
+@app.post("/api/farmers/by-gp")
+@admin_required
+def delete_farmers_gp():
+    data = request.json or {}
+    gp = (data.get("gp") or "").strip().lower()
+    scheme = data.get("scheme") or ""
+    if not gp:
+        return jsonify({"error": "Gram Panchayat is required"}), 400
+    con = db()
+    removed = 0
+    rows = con.execute("SELECT id, payload, form_type FROM records").fetchall()
+    for r in rows:
+        item = json.loads(r["payload"] or "{}")
+        if scheme and (item.get("scheme") or r["form_type"]) != scheme:
+            continue
+        if (item.get("GP") or "").strip().lower() == gp:
+            con.execute("DELETE FROM records WHERE id=?", (r["id"],))
+            removed += 1
+    con.commit(); con.close()
+    return jsonify({"ok": True, "removed": removed})
+
 @app.delete("/api/clusters/<cid>")
 @admin_required
 def del_cluster(cid):
