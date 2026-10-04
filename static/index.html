@@ -113,7 +113,7 @@ function schemeDash(rows){
 function roleMapView(name){
   const role=name==="LRP mapping"?"lrp":"krishi_sakhi";
   const title=role==="lrp"?"LRP mapping · PKVY":"Krishi Sakhi / CRP mapping · Natural Farming";
-  return `<div class="card"><h3>${title}</h3><div class="grid"><div><label>Name</label><input id="nn"/></div><div><label>Mobile</label><input id="nm"/></div><div><label>Email</label><input id="nmail"/></div><div><label>Username</label><input id="nu"/></div><div><label>Password</label><input id="np"/></div><div><label>Cluster</label><select id="ncl"></select></div></div><button class="go" id="roleAdd" data-role="${role}">Add</button></div>`;
+  return `<div class="card"><h3>${title}</h3><div class="grid"><div><label>Name</label><input id="nn"/></div><div><label>Mobile</label><input id="nm"/></div><div><label>Email</label><input id="nmail"/></div><div><label>Username</label><input id="nu"/></div><div><label>Password</label><input id="np"/></div><div><label>Cluster</label><select id="ncl">${Object.entries(blocks).filter(([n,c])=>(c.schemes||[]).includes(scheme)).map(([n])=>`<option>${n}</option>`).join("")||"<option>Map a cluster in this scheme first</option>"}</select></div></div><button class="go" id="roleAdd" data-role="${role}">Add</button></div>`;
 }
 function clusterMapView(){
   if(!(me.role==="admin"||me.role==="district_admin")) return `<div class="card">Cluster map is for System Admin and District Admin.</div>`;
