@@ -329,15 +329,18 @@ function wire(){
     } catch(e) { alert(e.message); }
   };
   document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{ if(!confirm("Delete?")) return; await api("/api/users/"+b.dataset.del,{method:"DELETE"}); show("users"); });
+  applyLang();
 }
 function filterCards(el){ document.querySelectorAll("[data-q]").forEach(n=>n.style.display=n.dataset.q.toLowerCase().includes(el.value.toLowerCase())?"":"none"); }
 function applyLang(){
   if(window.LANG!=="hi") return;
-  const map={"Farmer Name":"किसान का नाम","Father/Husband Name":"पिता/पति का नाम","Father name":"पिता का नाम","Jan Aadhaar":"जन आधार","Aadhaar":"आधार","Mobile":"मोबाइल","District":"जिला","Tehsil":"तहसील","Block":"ब्लॉक","Gram Panchayat":"ग्राम पंचायत","Village":"गाँव","Cluster":"क्लस्टर","Financial Year":"वित्तीय वर्ष","Bank account":"बैंक खाता","IFSC":"आईएफएससी","Bank branch":"बैंक शाखा","Caste":"जाति","Category":"श्रेणी","Area hectare":"क्षेत्र हेक्टेयर","Year":"वर्ष","Calculate":"गणना","Update payment":"भुगतान अपडेट","Send for sign":"साइन के लिए भेजें","Save farmer":"किसान सेव","Add farmer":"किसान जोड़ें","Upload Excel":"एक्सेल अपलोड","Preview":"पूर्वावलोकन","Read photo":"फोटो पढ़ें","Generate PDF":"पीडीएफ बनाएँ","Export Excel":"एक्सेल निकालें","Logout":"लॉगआउट","Submit":"जमा करें","Save draft":"ड्राफ्ट सेव","Sign & submit":"साइन और जमा","Download":"डाउनलोड","Search":"खोज","Name":"नाम","Role":"भूमिका","Username":"यूजरनेम","Password":"पासवर्ड","Add":"जोड़ें","Reports":"रिपोर्ट","Complete":"पूर्ण","Dashboard":"डैशबोर्ड"};
-  document.querySelectorAll("label,button,h2,h3,th,p,a").forEach(el=>{ const t=el.childNodes[0]; if(t&&t.nodeType===3){ const v=t.nodeValue.trim(); if(map[v]) t.nodeValue=t.nodeValue.replace(v,map[v]); }});
+  const map=[["Farmer Payment List","किसान भुगतान सूची"],["Father/Husband Name","पिता/पति का नाम"],["Jan Aadhaar","जन आधार"],["Aadhaar No","आधार नंबर"],["Aadhaar","आधार"],["Farmer Name","किसान का नाम"],["Bank account","बैंक खाता"],["Bank branch","बैंक शाखा"],["Area hectare","क्षेत्र हेक्टेयर"],["Financial Year","वित्तीय वर्ष"],["Gram Panchayat","ग्राम पंचायत"],["Upload Excel","एक्सेल अपलोड"],["Read photo","फोटो पढ़ें"],["Generate PDF","पीडीएफ बनाएँ"],["Export Excel","एक्सेल निकालें"],["Update payment","भुगतान अपडेट"],["Send for sign","साइन के लिए भेजें"],["Sign & submit","साइन और जमा"],["Save draft","ड्राफ्ट सेव"],["Bulk Upload","बल्क अपलोड"],["Select year","वर्ष चुनें"],["Village","गाँव"],["Mobile","मोबाइल"],["Caste","जाति"],["Category","श्रेणी"],["Calculate","गणना"],["Submit","जमा करें"],["Preview","पूर्वावलोकन"],["Logout","लॉगआउट"],["Year","वर्ष"],["Name","नाम"],["Role","भूमिका"],["Password","पासवर्ड"]];
+  const walk=document.createTreeWalker(document.getElementById("app"), NodeFilter.SHOW_TEXT);
+  const nodes=[]; while(walk.nextNode()) nodes.push(walk.currentNode);
+  nodes.forEach(n=>{ let v=n.nodeValue; map.forEach(([a,b])=>{ if(v.includes(a)) v=v.split(a).join(b); }); n.nodeValue=v; });
 }
-function bind(){ const go=document.getElementById("go"); if(go){ go.onclick=async()=>{ try{ await api("/api/login",{method:"POST", body:JSON.stringify({username:u.value,password:p.value})}); boot(); }catch(e){ err.textContent=e.message; } }; return; } const langBtn=document.getElementById("lang"); if(langBtn) langBtn.onclick=()=>{ window.LANG=window.LANG==="hi"?"en":"hi"; render(); }; document.getElementById("out").onclick=async()=>{ await api("/api/logout",{method:"POST"}); me=null; scheme=null; render(); }; document.querySelectorAll("aside button[data-t]").forEach(b=>b.onclick=()=>show(b.dataset.t)); show(scheme?tab:"home").then(applyLang); }
-boot();
+function bind(){ const go=document.getElementById("go"); if(go){ go.onclick=async()=>{ try{ await api("/api/login",{method:"POST", body:JSON.stringify({username:u.value,password:p.value})}); window.LANG=localStorage.getItem("lang")||"en"; boot(); }catch(e){ err.textContent=e.message; } }; return; } const langBtn=document.getElementById("lang"); if(langBtn) langBtn.onclick=()=>{ window.LANG=window.LANG==="hi"?"en":"hi"; localStorage.setItem("lang", window.LANG); render(); }; document.getElementById("out").onclick=async()=>{ await api("/api/logout",{method:"POST"}); me=null; scheme=null; render(); }; document.querySelectorAll("aside button[data-t]").forEach(b=>b.onclick=()=>show(b.dataset.t)); show(scheme?tab:"home").then(applyLang); }
+window.LANG=localStorage.getItem("lang")||"en"; boot();
 </script>
 </body>
 </html>
