@@ -267,6 +267,22 @@ def directory():
 
 @app.post("/api/directory/village")
 @admin_required
+
+def cluster_for(con, scheme, gp):
+    con.execute("CREATE TABLE IF NOT EXISTS scheme_clusters (id TEXT PRIMARY KEY, scheme TEXT, cluster_id TEXT, gp TEXT)")
+    row = con.execute("SELECT c.name FROM scheme_clusters s JOIN clusters c ON c.id=s.cluster_id WHERE s.scheme=? AND lower(s.gp)=lower(?)", (scheme, gp or "")).fetchone()
+    return row["name"] if row else ""
+
+def attach_farmers(con, scheme, gp, name):
+    if not gp or not name:
+        return
+    for r in con.execute("SELECT id, payload FROM records WHERE form_type=?", (scheme,)).fetchall():
+        item = json.loads(r["payload"] or "{}")
+        if (item.get("GP") or "").strip().lower() != gp.strip().lower():
+            continue
+        item["Cluster ID"] = name
+        con.execute("UPDATE records SET cluster=?, payload=? WHERE id=?", (name, json.dumps(item, ensure_ascii=False), r["id"]))
+
 def map_village():
     data = request.json or {}
     tehsil, gp, village = (data.get("tehsil") or "").strip(), (data.get("gp") or "").strip(), (data.get("village") or "").strip()
@@ -299,6 +315,7 @@ def map_cluster():
     con.execute("INSERT INTO scheme_clusters VALUES (?,?,?,?)", (uuid.uuid4().hex, scheme, cid, data.get("gp") or ""))
     for village in data.get("villages") or []:
         con.execute("INSERT INTO places VALUES (?,?,?,?)", (uuid.uuid4().hex, cid, village, data.get("gp") or village))
+    attach_farmers(con, scheme, data.get("gp") or "", name)
     con.commit()
     con.close()
     return jsonify({"ok": True, "id": cid, "cluster_id": code})
@@ -788,7 +805,7 @@ def excel_upload():
         if scheme in ("pkvy", "natural"):
             prefix = {"pkvy":"PKVY-F","natural":"NF-F"}[scheme]
             item["Farmer ID"] = item["farmer_id"] = prefix + "-" + uuid.uuid4().hex[:6].upper()
-            item["Cluster ID"] = (item.get("GP") or "") + "-" + (item.get("Village") or "")
+            item["Cluster ID"] = cluster_for(con, scheme, item.get("GP") or "") or (item.get("GP") or "") + "-" + (item.get("Village") or "")
             source = (item.get("Irrigation Source") or "").strip().lower()
             item["IRRIGATED OR NON IRRIGATED"] = "NON IRRIGATED" if source in ("", "no", "none") else "IRRIGATED"
             item["Branch Address"] = item.get("GP") or item.get("Block") or ""
@@ -842,7 +859,7 @@ def excel_upload():
         rid = uuid.uuid4().hex
         con.execute(
             "INSERT INTO records VALUES (?,?,?,?,?,?,?,?,?,?)",
-            (rid, u["id"], u["name"], u["role"], u["cluster"], str(item.get("Village") or ""), scheme,
+            (rid, u["id"], u["name"], u["role"], item.get("Cluster ID") or u["cluster"], str(item.get("Village") or ""), scheme,
              json.dumps(item, ensure_ascii=False), "submitted", now),
         )
         add_history(con, rid, "submitted", "Excel से जमा", u["name"])
