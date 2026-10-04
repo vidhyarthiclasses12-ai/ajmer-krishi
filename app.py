@@ -811,6 +811,42 @@ def excel_upload():
         ew.save(os.path.join(BASE, "data", err_id + ".xlsx"))
     return jsonify({"saved": len(saved), "errors": errors, "error_file": err_id, "message": f"{len(saved)} saved, {len(errors)} error"})
 
+@app.post("/api/photo-excel")
+@login_required
+def photo_excel():
+    u = current()
+    f = request.files.get("file")
+    scheme = request.form.get("scheme") or "pkvy"
+    if not f:
+        return jsonify({"error": "Choose a photo"}), 400
+    raw = f.read()
+    if len(raw) > 8_000_000:
+        return jsonify({"error": "Photo must be under 8 MB"}), 400
+    import subprocess, tempfile
+    path = tempfile.mktemp(suffix=".jpg")
+    open(path, "wb").write(raw)
+    try:
+        text = subprocess.check_output(["tesseract", path, "stdout", "-l", "eng"], stderr=subprocess.DEVNULL, text=True)
+    except Exception:
+        text = ""
+    saved = 0
+    con = db()
+    now = datetime.now().isoformat(timespec="seconds")
+    prefix = {"pkvy": "PKVY-F", "natural": "NF-F", "minikit": "MK-F", "demo": "DEM-F"}.get(scheme, "F")
+    for line in text.splitlines():
+        parts = [x.strip() for x in line.replace("|", ",").split(",") if x.strip()]
+        if len(parts) < 2:
+            parts = [x for x in line.split() if x]
+        if len(parts) < 2 or not any(ch.isalpha() for ch in parts[0]):
+            continue
+        name, village = parts[0], parts[1] if len(parts) > 1 else ""
+        item = {"scheme": scheme, "farmer_id": prefix + "-" + uuid.uuid4().hex[:6].upper(), "Farmer Name": name, "farmer": name, "Village": village, "source": "photo"}
+        rid = uuid.uuid4().hex
+        con.execute("INSERT INTO records VALUES (?,?,?,?,?,?,?,?,?,?)", (rid, u["id"], u["name"], u["role"], u["cluster"], village, scheme, json.dumps(item, ensure_ascii=False), "submitted", now))
+        saved += 1
+    con.commit(); con.close()
+    return jsonify({"saved": saved, "text": text[:1500], "message": f"{saved} rows read from photo"})
+
 @app.get("/api/errors/<eid>")
 @login_required
 def error_xlsx(eid):
