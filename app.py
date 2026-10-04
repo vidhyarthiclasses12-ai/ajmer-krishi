@@ -765,8 +765,10 @@ def excel_upload():
         "ytype": col("अनुमानित", "वास्तविक", "type"),
     }
     con = db()
-    seen = {norm(json.loads(r["payload"]).get("farmer")) + "|" + norm(json.loads(r["payload"]).get("crop"))
-            for r in con.execute("SELECT payload FROM records WHERE cluster=?", (u["cluster"],)).fetchall()}
+    seen = set()
+    for r in con.execute("SELECT payload FROM records").fetchall():
+        old = json.loads(r["payload"])
+        seen.add(norm(old.get("Jan Aadhaar")) + "|" + norm(old.get("Aadhaar No")))
     clean, errors = [], []
     for n, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
         if not any(row):
@@ -822,14 +824,14 @@ def excel_upload():
         if aad and len(aad) != 12:
             errors.append({"row": n, "field": "Aadhaar No", "entered": item.get("Aadhaar No"), "type": "error", "detail": "Aadhaar must be 12 digits"})
             continue
-        key = scheme + "|" + norm(item.get("Farmer Name")) + "|" + norm(item.get("Village")) + "|" + norm(item.get("Crop"))
+        idkey = norm(item.get("Jan Aadhaar")) + "|" + norm(item.get("Aadhaar No"))
         if missing:
             errors.append({"row": n, "field": ", ".join(missing), "entered": item.get("Farmer Name") or "", "type": "error", "detail": ", ".join(missing) + " is empty or invalid"})
             continue
-        if key in seen:
-            errors.append({"row": n, "field": "Farmer Name", "entered": item.get("Farmer Name") or "", "type": "duplicate", "detail": "Duplicate farmer and crop already uploaded"})
+        if idkey.strip("|") and idkey in seen:
+            errors.append({"row": n, "field": "Aadhaar No", "entered": item.get("Aadhaar No") or "", "type": "duplicate", "detail": "Duplicate only when Jan Aadhaar and Aadhaar are both same"})
             continue
-        seen.add(key)
+        seen.add(idkey)
         clean.append(item)
     if request.form.get("preview") == "1":
         con.close()
