@@ -826,7 +826,7 @@ def excel_upload():
         if scheme in ("pkvy", "natural"):
             prefix = {"pkvy":"PKVY-F","natural":"NF-F"}[scheme]
             item["Farmer ID"] = item["farmer_id"] = prefix + "-" + uuid.uuid4().hex[:6].upper()
-            item["Cluster ID"] = cluster_for(con, scheme, item.get("GP") or "") or (item.get("GP") or "") + "-" + (item.get("Village") or "")
+            gp_name=(item.get("GP") or "").strip(); village=(item.get("Village") or "").strip(); item["Cluster ID"] = cluster_for(con, scheme, gp_name) or (gp_name if gp_name.lower()==village.lower() else (gp_name+"-"+village).strip("-"))
             source = (item.get("Irrigation Source") or "").strip().lower()
             item["IRRIGATED OR NON IRRIGATED"] = "NON IRRIGATED" if source in ("", "no", "none") else "IRRIGATED"
             item["Branch Address"] = item.get("GP") or item.get("Block") or ""
