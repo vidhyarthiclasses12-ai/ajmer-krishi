@@ -686,6 +686,13 @@ def resubmit(rid):
 
 REQUIRED = ["farmer", "crop", "kind", "area", "yield"]
 
+DEV = {"अ":"a","आ":"a","इ":"i","ई":"i","उ":"u","ऊ":"u","ए":"e","ऐ":"ai","ओ":"o","औ":"au","क":"k","ख":"kh","ग":"g","घ":"gh","च":"ch","छ":"chh","ज":"j","झ":"jh","ट":"t","ठ":"th","ड":"d","ढ":"dh","त":"t","थ":"th","द":"d","ध":"dh","न":"n","प":"p","फ":"ph","ब":"b","भ":"bh","म":"m","य":"y","र":"r","ल":"l","व":"v","श":"sh","ष":"sh","स":"s","ह":"h","ा":"a","ि":"i","ी":"i","ु":"u","ू":"u","े":"e","ै":"ai","ो":"o","ौ":"au","ं":"n","ँ":"n","्":""}
+def to_english(value):
+    text = str(value or "")
+    if not any("\u0900" <= ch <= "\u097F" for ch in text):
+        return text
+    return "".join(DEV.get(ch, ch) for ch in text)
+
 def norm(v):
     return str(v or "").strip().lower()
 
@@ -761,7 +768,7 @@ def excel_upload():
         item = {}
         for i, h in enumerate(headers):
             val = row[i] if i < len(row) else ""
-            item[h] = "" if val is None else str(val)
+            item[h] = "" if val is None else to_english(val)
         item["scheme"] = scheme
         fid = str(item.get("Farmer ID") or "")
         prefix = {"pkvy":"PKVY-F","natural":"NF-F","minikit":"MK-F","demo":"DEM-F"}.get(scheme)
@@ -801,8 +808,17 @@ def excel_upload():
             seen.add(key); seen.add(acc)
         missing = [k for k in REQUIRED_BY.get(scheme, []) if str(item.get(k) or "").strip() == ""]
         mobile = "".join(ch for ch in str(item.get("Mobile") or "") if ch.isdigit())
+        jan = "".join(ch for ch in str(item.get("Jan Aadhaar") or "") if ch.isdigit())
+        aad = "".join(ch for ch in str(item.get("Aadhaar No") or "") if ch.isdigit())
         if mobile and len(mobile) != 10:
-            missing.append("Mobile 10 digit nahi")
+            errors.append({"row": n, "field": "Mobile", "entered": item.get("Mobile"), "type": "error", "detail": "Mobile must be 10 digits"})
+            continue
+        if jan and len(jan) != 10:
+            errors.append({"row": n, "field": "Jan Aadhaar", "entered": item.get("Jan Aadhaar"), "type": "error", "detail": "Jan Aadhaar must be 10 digits"})
+            continue
+        if aad and len(aad) != 12:
+            errors.append({"row": n, "field": "Aadhaar No", "entered": item.get("Aadhaar No"), "type": "error", "detail": "Aadhaar must be 12 digits"})
+            continue
         key = scheme + "|" + norm(item.get("Farmer Name")) + "|" + norm(item.get("Village")) + "|" + norm(item.get("Crop"))
         if missing:
             errors.append({"row": n, "field": ", ".join(missing), "entered": item.get("Farmer Name") or "", "type": "error", "detail": ", ".join(missing) + " is empty or invalid"})
