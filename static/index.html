@@ -269,7 +269,7 @@ function wire(){
   const mapv=document.getElementById("mapv");
   if(mapv) mapv.onclick=async()=>{ await api("/api/directory/village",{method:"POST", body:JSON.stringify({tehsil:mteh.value, gp:mgp.value, village:mvill.value})}); window.LGD=(await api("/api/directory")).tree||{}; alert("Added to the dropdown"); show("masters"); };
   const chp=document.getElementById("chp"); if(chp) chp.onclick=async()=>{ try{ await api("/api/password",{method:"POST", body:JSON.stringify({old:oldp.value,password:newp.value})}); alert("Password updated"); }catch(e){ alert(e.message);} };
-  const sendExcel=async(preview)=>{ const file=document.getElementById("xf").files[0]; if(!file) return alert("Choose an Excel file first"); const fd=new FormData(); fd.append("file", file); fd.append("scheme", scheme||"pkvy"); if(preview) fd.append("preview","1"); const res=await api("/api/excel",{method:"POST", body:fd}); document.getElementById("xr").innerHTML=`<p><b>${res.message||""}</b></p><p>Valid ${res.valid||res.saved||0}. Invalid ${(res.errors||[]).length}</p>`+(res.errors||[]).map(e=>`<p style="color:#b91c1c">Row ${e.row}: ${e.detail}</p>`).join("")+(res.error_file?`<p><a href="/api/errors/${res.error_file}">Download error sheet</a></p>`:""); };
+  const sendExcel=async(preview)=>{ const file=document.getElementById("xf").files[0]; if(!file) return alert("Choose an Excel file first"); const fd=new FormData(); fd.append("file", file); fd.append("scheme", scheme||"pkvy"); if(preview) fd.append("preview","1"); const res=await api("/api/excel",{method:"POST", body:fd}); document.getElementById("xr").innerHTML=`<p><b>${res.message||""}</b></p><p>Valid ${res.valid||res.saved||0}. Invalid ${(res.errors||[]).length}</p>`+(res.errors||[]).map(e=>`<p style="color:#b91c1c">Row ${e.row}: ${String(e.detail||"").replace(/</g,"")}</p>`).join("")+(res.error_file?`<p><a href="/api/errors/${res.error_file}">Download error sheet</a></p>`:""); };
   const xp=document.getElementById("xp"); if(xp) xp.onclick=()=>sendExcel(true).catch(e=>alert(e.message));
   const xu=document.getElementById("xu");
   if(xu) xu.onclick=async()=>{
@@ -280,7 +280,7 @@ function wire(){
       fd.append("file", file);
       fd.append("scheme", scheme||"pkvy");
       const res=await api("/api/excel",{method:"POST", body:fd});
-      document.getElementById("xr").innerHTML=`<p><b>${res.message||""}</b></p><p>${res.saved||0} saved. Invalid ${(res.errors||[]).length}</p>`+(res.errors||[]).map(e=>`<p style="color:#b91c1c">Row ${e.row}: ${e.detail}</p>`).join("")+(res.error_file?`<p><a class="go" href="/api/errors/${res.error_file}">Download error sheet</a></p>`:"<p>No errors</p>");
+      document.getElementById("xr").innerHTML=`<p><b>${res.message||""}</b></p><p>${res.saved||0} saved. Invalid ${(res.errors||[]).length}</p>`+(res.errors||[]).map(e=>`<p style="color:#b91c1c">Row ${e.row}: ${String(e.detail||"").replace(/</g,"")}</p>`).join("")+(res.error_file?`<p><a class="go" href="/api/errors/${res.error_file}">Download error sheet</a></p>`:"<p>No errors</p>");
     }catch(e){ alert(e.message); }
   };
   const add=document.getElementById("nuadd"); if(add) add.onclick=async()=>{
