@@ -11,8 +11,9 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 
 BASE = os.path.dirname(os.path.abspath(__file__))
-DB = os.path.join(BASE, "data", "portal.db")
-UPLOAD = os.path.join(BASE, "data", "photos")
+DATA = os.environ.get("DATA_DIR") or ("/data" if os.path.isdir("/data") else os.path.join(BASE, "data"))
+DB = os.path.join(DATA, "portal.db")
+UPLOAD = os.path.join(DATA, "photos")
 os.makedirs(UPLOAD, exist_ok=True)
 os.makedirs(os.path.dirname(DB), exist_ok=True)
 
@@ -799,9 +800,6 @@ def excel_upload():
                 continue
             key = norm(item.get("Farmer Name")) + "|" + norm(item.get("Jan Aadhaar"))
             acc = norm(item.get("Bank Account No"))
-            if key.strip("|") and key in seen:
-                errors.append({"row": n, "field": "Jan Aadhaar", "entered": item.get("Jan Aadhaar"), "type": "duplicate", "detail": "Same farmer name and Jan Aadhaar already uploaded"})
-                continue
             if acc and acc in seen:
                 errors.append({"row": n, "field": "Bank Account No", "entered": item.get("Bank Account No"), "type": "duplicate", "detail": "Duplicate bank account number"})
                 continue
