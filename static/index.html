@@ -35,8 +35,8 @@
 <script>
 let me=null, blocks={}, scheme=null, tab="home", year="2026-27", realRole="";
 const SCHEMES={
-  pkvy:{title:"PKVY", full:"PKVY Master only", prefix:"PKVY-F", menu:["Dashboard","PKVY Master","Farmer Payment List","Complete","Reports"]},
-  natural:{title:"Natural Farming", full:"Natural Farming Master only", prefix:"NF-F", menu:["Dashboard","Natural Farming Master","Farmer Payment List","Complete","Reports"]},
+  pkvy:{title:"PKVY", full:"PKVY Master only", prefix:"PKVY-F", menu:["Dashboard","PKVY Master","Farmer Payment List","PGS Data Information","Activity Report","Result","Bulk Upload","Complete","Reports"]},
+  natural:{title:"Natural Farming", full:"Natural Farming Master only", prefix:"NF-F", menu:["Dashboard","Natural Farming Master","Farmer Payment List","PGS Data Information","Result","Bulk Upload","Complete","Reports"]},
   minikit:{title:"Minikit", full:"Minikit Master only", prefix:"MK-F", menu:["Dashboard","Minikit Master","First Information","Distribution","Result","Bulk Upload","Complete","Reports"]},
   demo:{title:"Demonstration", full:"Demonstration Master only", prefix:"DEM-F", menu:["Dashboard","Demonstration Master","First Information","Sowing Report","Result","Bulk Upload","Complete","Reports"]}
 };
@@ -126,14 +126,16 @@ function paymentView(rows){
   const used=new Set(done.map(r=>r.payload.farmer_id||r.payload.farmer));
   const left=rows.filter(r=>r.form_type===scheme && !used.has(r.payload.farmer_id||r.payload.farmer) && r.payload.section!=="payment");
   const opts=left.map(r=>`<option value="${r.id}">${r.payload["Farmer Name"]||r.payload.farmer||""}</option>`).join("");
-  return `<div class="card"><h3>Farmer Payment List</h3><p>${done.length} updated. ${left.length} left in dropdown.</p>
-    <label>Farmer name from master</label><select id="payFarmer"><option value="">Select</option>${opts}</select>
-    <div class="grid"><div><label>Father name</label><input id="payFather"/></div><div><label>Caste category</label><select id="payCaste"><option>General</option><option>SC</option><option>ST</option><option>OBC</option></select></div>
-    <div><label>Mobile</label><input id="payMob"/></div><div><label>Jan Aadhaar</label><input id="payJan"/></div><div><label>Aadhaar</label><input id="payAad"/></div>
-    <div><label>Bank account</label><input id="payAcc"/></div><div><label>IFSC</label><input id="payIfsc"/></div><div><label>Bank name</label><input id="payBank"/></div><div><label>Branch</label><input id="payBranch"/></div></div>
-    <button class="go" id="paySave">Update payment</button>
+  return `<div class="card"><h3>Farmer Payment List</h3><p>Select year. Amount is per hectare. Less land gets a lower amount.</p>
+    <label>Year</label><select id="payYear"><option value="1">First year</option><option value="2">Second year</option><option value="3">Third year</option></select>
+    <label>Farmer name with father</label><select id="payFarmer"><option value="">Select</option>${opts}</select>
+    <div class="grid"><div><label>Caste</label><input id="payCaste2"/></div><div><label>Category</label><select id="payCaste"><option>General</option><option>SC</option><option>ST</option><option>OBC</option></select></div>
+    <div><label>Village</label><input id="payVillage"/></div><div><label>Area hectare</label><input id="payArea" type="number" step="0.01"/></div>
+    <div><label>Aadhaar</label><input id="payAad"/></div><div><label>Jan Aadhaar</label><input id="payJan"/></div><div><label>Mobile</label><input id="payMob"/></div>
+    <div><label>Bank account</label><input id="payAcc"/></div><div><label>IFSC</label><input id="payIfsc"/></div><div><label>Bank branch</label><input id="payBranch"/></div></div>
+    <p id="payCalc"></p><button class="line" id="payCalcBtn">Calculate</button> <button class="go" id="paySave">Update payment</button>
     ${left.length?"":`<button class="go" id="paySign">Send for sign</button>`}
-    <h3>Updated records</h3>${done.map(r=>`<div>${r.payload.farmer} · ${r.payload.account||""} · ${r.payload.bank||""}</div>`).join("")||"<p>No updated record yet</p>"}
+    <h3>Updated records</h3>${done.map(r=>`<div>${r.payload.farmer} · Year ${r.payload.year_no||""} · Rs ${r.payload.amount||""}</div>`).join("")||"<p>No updated record yet</p>"}
   </div>`;
 }
 function pgsView(rows){
@@ -257,7 +259,9 @@ function wire(){
   const rev=document.getElementById("rev"); if(rev) rev.onclick=async()=>{ try{ const r=await api("/api/revert",{method:"POST", body:JSON.stringify({cluster:revC.value, reason:revR.value})}); alert(r.count+" records wapas bheje"); }catch(e){ alert(e.message);} };
   document.querySelectorAll("[data-edit]").forEach(b=>b.onclick=async()=>{ try{ await api("/api/records/"+b.dataset.edit+"/edit",{method:"POST", body:JSON.stringify({payload:{"Farmer Name":document.getElementById("e-name-"+b.dataset.edit).value, farmer:document.getElementById("e-name-"+b.dataset.edit).value, Village:document.getElementById("e-vill-"+b.dataset.edit).value, Mobile:document.getElementById("e-mob-"+b.dataset.edit).value, Crop:document.getElementById("e-crop-"+b.dataset.edit).value}})}); alert("Saved"); show("Edit data"); }catch(e){ alert(e.message);} });
   const sendSign=document.getElementById("sendSign"); if(sendSign) sendSign.onclick=async()=>{ alert("Sent to Complete for signature"); show("Complete"); };
-  const paySave=document.getElementById("paySave"); if(paySave) paySave.onclick=async()=>{ const id=payFarmer.value; if(!id) return alert("Select a farmer"); const rows=await api("/api/records"); const f=rows.find(r=>r.id===id); await api("/api/records",{method:"POST", body:JSON.stringify({cluster:f.cluster, village:f.village, form_type:scheme, payload:{scheme, section:"payment", farmer_id:f.payload.farmer_id, farmer:f.payload["Farmer Name"]||f.payload.farmer, father:payFather.value, caste:payCaste.value, mobile:payMob.value, jan:payJan.value, aadhaar:payAad.value, account:payAcc.value, ifsc:payIfsc.value, bank:payBank.value, branch:payBranch.value}})}); show("Farmer Payment List"); };
+  const calcPay=()=>{ const year=payYear.value; const area=Number(payArea.value)||0; const rates=year==="1"?[5000]:year==="2"?[2000,2000,1000]:[2000,2000]; const parts=rates.map(r=>Math.round(r*area)); const total=parts.reduce((a,b)=>a+b,0); payCalc.textContent="Year "+year+" amount Rs "+total+" for "+area+" hectare"; return {parts,total}; };
+  const payCalcBtn=document.getElementById("payCalcBtn"); if(payCalcBtn) payCalcBtn.onclick=calcPay;
+  const paySave=document.getElementById("paySave"); if(paySave) paySave.onclick=async()=>{ const id=payFarmer.value; if(!id) return alert("Select a farmer"); const money=calcPay(); const rows=await api("/api/records"); const f=rows.find(r=>r.id===id); await api("/api/records",{method:"POST", body:JSON.stringify({cluster:f.cluster, village:payVillage.value||f.village, form_type:scheme, payload:{scheme, section:"payment", year_no:payYear.value, farmer_id:f.payload.farmer_id, farmer:f.payload["Farmer Name"]||f.payload.farmer, caste:payCaste2.value, category:payCaste.value, village:payVillage.value, area:payArea.value, amount:money.total, mobile:payMob.value, jan:payJan.value, aadhaar:payAad.value, account:payAcc.value, ifsc:payIfsc.value, branch:payBranch.value}})}); show("Farmer Payment List"); };
   const paySign=document.getElementById("paySign"); if(paySign) paySign.onclick=()=>show("Complete");
   const pgsSave=document.getElementById("pgsSave"); if(pgsSave) pgsSave.onclick=async()=>{ await api("/api/records",{method:"POST", body:JSON.stringify({cluster:me.cluster, village:"", form_type:scheme, payload:{scheme, section:"pgs", farmer:pgsFarmer.value, group:pgsGroup.value, code:pgsCode.value}})}); alert("PGS saved"); };
   const addMaster=document.getElementById("addMaster"); if(addMaster) addMaster.onclick=async()=>{ const n=Date.now().toString().slice(-6); await api("/api/records",{method:"POST", body:JSON.stringify({cluster:mcluster.value||me.cluster, village:mvillage.value, form_type:scheme, payload:{scheme, farmer_id:SCHEMES[scheme].prefix+"-"+n, "Farmer Name":mname.value, farmer:mname.value, Father:mfather.value, Mobile:mmob.value, Village:mvillage.value, GP:mgp2.value, "Cluster ID":mcluster.value}})}); alert("Saved in "+SCHEMES[scheme].title+" only"); show(SCHEMES[scheme].title+" Master"); };
