@@ -39,8 +39,8 @@
 <script>
 let me=null, blocks={}, scheme=null, tab="home", year="2026-27", realRole="";
 const SCHEMES={
-  pkvy:{title:"PKVY", full:"PKVY Master only", prefix:"PKVY-F", menu:["Dashboard","PKVY Master","Farmer Payment List","PGS Data Information","Activity Report","Result","Bulk Upload","Complete","Reports"]},
-  natural:{title:"Natural Farming", full:"Natural Farming Master only", prefix:"NF-F", menu:["Dashboard","Natural Farming Master","Farmer Payment List","PGS Data Information","Result","Bulk Upload","Complete","Reports"]},
+  pkvy:{title:"PKVY", full:"PKVY Master only", prefix:"PKVY-F", menu:["Dashboard","PKVY Master","Farmer Payment List","PGS Data Information","Activity Report","Cluster map","Bulk Upload","Complete","Reports"]},
+  natural:{title:"Natural Farming", full:"Natural Farming Master only", prefix:"NF-F", menu:["Dashboard","Natural Farming Master","Farmer Payment List","PGS Data Information","Cluster map","Bulk Upload","Complete","Reports"]},
   minikit:{title:"Minikit", full:"Minikit Master only", prefix:"MK-F", menu:["Dashboard","Minikit Master","First Information","Distribution","Result","Bulk Upload","Complete","Reports"]},
   demo:{title:"Demonstration", full:"Demonstration Master only", prefix:"DEM-F", menu:["Dashboard","Demonstration Master","First Information","Sowing Report","Result","Bulk Upload","Complete","Reports"]}
 };
@@ -82,6 +82,7 @@ async function show(name){
   else if(name==="Dashboard") panel.innerHTML=schemeDash(mine);
   else if(name==="Reports") panel.innerHTML=reportView(mine);
   else if(name==="Reports") panel.innerHTML=reportView(mine);
+  else if(name==="Cluster map") panel.innerHTML=clusterMapView();
   else if(name==="Farmer Payment List") panel.innerHTML=paymentView(mine);
   else if(name==="PGS Data Information") panel.innerHTML=pgsView(mine);
   else panel.innerHTML=schemeForm(name, mine);
@@ -101,12 +102,15 @@ function home(rows){
   return `<h2>Main Dashboard</h2><p style="color:#6b7280">${me.role==="supervisor"?"Agriculture Supervisor · apni gram panchayat ki sabhi scheme":me.role==="lrp"?"LRP · sirf PKVY":me.role==="krishi_sakhi"||me.role==="crp"?"Natural Farming only":"All schemes"}</p><div class="schemes">${keys.map(k=>card(k, lines[k])).join("")}</div>`;
 }
 function schemeDash(rows){
-  const map = (me.role==="admin"||me.role==="district_admin") ? `<div class="card"><h3>Cluster map</h3><div class="grid">${lgdSelects()}<div><label>Cluster name</label><input id="mapName"/></div></div><button class="go" id="mapCluster">Map cluster</button></div>` : "";
   const mapped=Object.entries(blocks).filter(([n,c])=>(c.schemes||[]).includes(scheme)).map(([n,c])=>`<div>${n} · ${c.gp||c.block||""}</div>`).join("")||"<p class='muted'>No mapped cluster yet</p>";
-  return `<div class="card"><h3>Mapped clusters</h3>${mapped}</div><div class="card"><h3>${SCHEMES[scheme].title} Dashboard</h3><div class="schemes">
+  return `<div class="card"><h3>${SCHEMES[scheme].title} Dashboard</h3><div class="schemes">
     <div class="stat">Records ${rows.length}</div><div class="stat">Pending ${rows.filter(r=>r.status==="submitted").length}</div>
     <div class="stat">Approved ${rows.filter(r=>r.status==="approved").length}</div><div class="stat">Rejected ${rows.filter(r=>r.status==="rejected").length}</div>
-  </div></div>${map}`;
+  </div><h3>Mapped clusters</h3>${mapped}</div>`;
+}
+function clusterMapView(){
+  if(!(me.role==="admin"||me.role==="district_admin")) return `<div class="card">Cluster map is for System Admin and District Admin.</div>`;
+  return `<div class="card"><h3>Cluster map</h3><div class="grid">${lgdSelects()}<div><label>Cluster name</label><input id="mapName"/></div></div><button class="go" id="mapCluster">Map cluster</button></div>`;
 }
 function lgdSelects(){
   const teh=Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("");
