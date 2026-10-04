@@ -820,13 +820,14 @@ def photo_excel():
     if not f:
         return jsonify({"error": "Choose a photo"}), 400
     raw = f.read()
-    if len(raw) > 8_000_000:
-        return jsonify({"error": "Photo must be under 8 MB"}), 400
+    if len(raw) > 15_000_000:
+        return jsonify({"saved": 0, "message": "Photo must be under 15 MB"})
     import io, shutil, subprocess, tempfile
     from PIL import Image
     path = tempfile.mktemp(suffix=".png")
     try:
         img = Image.open(io.BytesIO(raw)).convert("RGB")
+        img.thumbnail((1600, 1600))
         img.save(path, "PNG")
     except Exception:
         open(path, "wb").write(raw)
