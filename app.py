@@ -691,8 +691,8 @@ def norm(v):
 
 
 TEMPLATES = {
-  "pkvy": ["Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Financial Year","KHATA NO/PLOT NO","Khasra No.","TOTAL AREA","OFFERD Area","Crop","BANK ACCOUNT NO","IFSC CODE","BARNCH ADDRES","COW","BUFFELO","GOAT","IRRIATION SOURCE","LAND TYPE","LAST DATE OF PROHIBATED INPUT"],
-  "natural": ["Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Financial Year","KHATA NO/PLOT NO","Khasra No.","TOTAL AREA","OFFERD Area","Crop","BANK ACCOUNT NO","IFSC CODE","BARNCH ADDRES","COW","BUFFELO","GOAT","IRRIATION SOURCE","LAND TYPE","LAST DATE OF PROHIBATED INPUT"],
+  "pkvy": ["Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","Aadhaar No","District","Tehsil","Block","GP","Village","Financial Year","Khata No/Plot No","Khasra No","Total Area","Offered Area","Crop","Bank Account No","IFSC Code","Branch Address","Cow","Buffalo","Goat","Irrigation Source","Land Type","Last Date of Prohibited Input"],
+  "natural": ["Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","Aadhaar No","District","Tehsil","Block","GP","Village","Financial Year","Khata No/Plot No","Khasra No","Total Area","Offered Area","Crop","Bank Account No","IFSC Code","Branch Address","Cow","Buffalo","Goat","Irrigation Source","Land Type","Last Date of Prohibited Input"],
   "minikit": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety"],
   "demo": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety"],
 }
@@ -774,29 +774,29 @@ def excel_upload():
             prefix = {"pkvy":"PKVY-F","natural":"NF-F"}[scheme]
             item["Farmer ID"] = item["farmer_id"] = prefix + "-" + uuid.uuid4().hex[:6].upper()
             item["Cluster ID"] = (item.get("GP") or "") + "-" + (item.get("Village") or "")
-            source = (item.get("IRRIATION SOURCE") or "").strip().lower()
+            source = (item.get("Irrigation Source") or "").strip().lower()
             item["IRRIGATED OR NON IRRIGATED"] = "NON IRRIGATED" if source in ("", "no", "none") else "IRRIGATED"
-            item["BARNCH ADDRES"] = item.get("GP") or item.get("Block") or ""
-            offered = float(item.get("OFFERD Area") or 0)
-            total = float(item.get("TOTAL AREA") or 0)
+            item["Branch Address"] = item.get("GP") or item.get("Block") or ""
+            offered = float(item.get("Offered Area") or 0)
+            total = float(item.get("Total Area") or 0)
             if offered and total and total < offered:
-                errors.append({"row": n, "field": "TOTAL AREA", "entered": item.get("TOTAL AREA"), "type": "error", "detail": "Total area cannot be less than offered area"})
+                errors.append({"row": n, "field": "Total Area", "entered": item.get("Total Area"), "type": "error", "detail": "Total area cannot be less than offered area"})
                 continue
-            ifsc = (item.get("IFSC CODE") or "").strip().upper()
+            ifsc = (item.get("IFSC Code") or "").strip().upper()
             if ifsc and not (len(ifsc)==11 and ifsc[:4].isalpha() and ifsc[4]=="0"):
-                errors.append({"row": n, "field": "IFSC CODE", "entered": ifsc, "type": "error", "detail": "Invalid IFSC code"})
+                errors.append({"row": n, "field": "IFSC Code", "entered": ifsc, "type": "error", "detail": "Invalid IFSC code"})
                 continue
             year = (item.get("Financial Year") or "").strip()
             if u["role"] not in ("admin", "district_admin") and year and year != "2026-27":
                 errors.append({"row": n, "field": "Financial Year", "entered": year, "type": "error", "detail": "Only current year is allowed. Old year can be added by System Admin or District Admin"})
                 continue
             key = norm(item.get("Farmer Name")) + "|" + norm(item.get("Jan Aadhaar"))
-            acc = norm(item.get("BANK ACCOUNT NO"))
+            acc = norm(item.get("Bank Account No"))
             if key.strip("|") and key in seen:
                 errors.append({"row": n, "field": "Jan Aadhaar", "entered": item.get("Jan Aadhaar"), "type": "duplicate", "detail": "Same farmer name and Jan Aadhaar already uploaded"})
                 continue
             if acc and acc in seen:
-                errors.append({"row": n, "field": "BANK ACCOUNT NO", "entered": item.get("BANK ACCOUNT NO"), "type": "duplicate", "detail": "Duplicate bank account number"})
+                errors.append({"row": n, "field": "Bank Account No", "entered": item.get("Bank Account No"), "type": "duplicate", "detail": "Duplicate bank account number"})
                 continue
             seen.add(key); seen.add(acc)
         missing = [k for k in REQUIRED_BY.get(scheme, []) if str(item.get(k) or "").strip() == ""]
