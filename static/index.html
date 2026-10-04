@@ -75,6 +75,8 @@ async function show(name){
   else if(name==="Dashboard") panel.innerHTML=schemeDash(mine);
   else if(name==="Reports") panel.innerHTML=reportView(mine);
   else if(name==="Reports") panel.innerHTML=reportView(mine);
+  else if(name==="Farmer Payment List") panel.innerHTML=paymentView(mine);
+  else if(name==="PGS Data Information") panel.innerHTML=pgsView(mine);
   else panel.innerHTML=schemeForm(name, mine);
   wire();
 }
