@@ -56,7 +56,7 @@ function login(){ return `<div style="min-height:100vh;position:relative;backgro
 function shell(){
   const HI={"Dashboard":"डैशबोर्ड","Farmer Master":"किसान मास्टर","Users & Roles":"यूजर और रोल","Master Data":"मास्टर डेटा","Notifications":"सूचना","Audit Log":"ऑडिट","Settings":"सेटिंग","PKVY Master":"पीकेवीवाई मास्टर","Natural Farming Master":"प्राकृतिक खेती मास्टर","Farmer Payment List":"किसान भुगतान सूची","PGS Data Information":"पीजीएस जानकारी","Activity Report":"गतिविधि रिपोर्ट","Result":"परिणाम","Bulk Upload":"बल्क अपलोड","Complete":"पूर्ण","Reports":"रिपोर्ट","Logout":"लॉगआउट","Hindi":"English"};
   const label=m=>window.LANG==="hi"?(HI[m]||m):m;
-  const items = scheme? SCHEMES[scheme].menu.map(m=>[m,label(m)]) : [["home",label("Dashboard")],["users",label("Users & Roles")],["masters",label("Master Data")],["notes",label("Notifications")],["log",label("Audit Log")],["settings",label("Settings")]];
+  const items = scheme? SCHEMES[scheme].menu.map(m=>[m,label(m)]) : [["home",label("Dashboard")],["users",label("Users & Roles")],["masters",label("Master Data")],["notes",label("Notifications")],["log",label("Audit Log")],["settings",label("Settings")]].concat(me.role==="admin"?[["delete-cluster","Delete cluster"],["delete-farmers","Delete farmers by GP"]]:[]);
   let only=["pkvy","natural","minikit","demo"]; try{ only=allowedSchemes(); }catch(e){} const schemeSlide = scheme?"":(only.length===1?`<button data-s="${only[0]}">${SCHEMES[only[0]].title}</button>`:`<button data-slide="schemes">Schemes</button><div id="schemeSlide" style="display:none">${only.map(k=>`<button data-s="${k}" style="padding-left:22px">${SCHEMES[k].title}</button>`).join("")}</div>`);
   return `<div class="app"><aside><b>Farmer & Scheme Data Management Portal</b>${items.filter(([id])=>id==="home").map(([id,label])=>`<button data-t="${id}" class="${tab===id?"active":""}">${label}</button>`).join("")}${scheme?"":schemeSlide}${items.filter(([id])=>id!=="home").map(([id,label])=>`<button data-t="${id}" class="${tab===id?"active":""}">${label}</button>`).join("")}${scheme?`<button id="back">Main Dashboard</button>`:""}</aside>
   <main><header><div><b>Department of Agriculture, Ajmer</b><div style="font-size:12px;color:#6b7280">${scheme?SCHEMES[scheme].full:"Agriculture Information Management System"} · FY ${year}</div></div>
@@ -78,6 +78,8 @@ async function show(name){
   else if(name==="Complete") panel.innerHTML=(["supervisor","aao","admin","lrp","crp","krishi_sakhi"].includes(me.role))?verifyView(mine):`<div class="card">Sign is not open for this role.</div>`;
   else if(name==="log"||name==="Audit Log") panel.innerHTML=logView(rows);
   else if(name==="notes"||name==="Notifications") panel.innerHTML=await notePage();
+  else if(name==="delete-cluster") panel.innerHTML=`<div class="card"><h3>Delete cluster</h3><label>Cluster</label><select id="delCluster">${Object.entries(blocks).map(([n,c])=>`<option value="${c.id}">${n}</option>`).join("")}</select><button class="bad" id="delClusterBtn">Delete cluster</button></div>`;
+  else if(name==="delete-farmers") panel.innerHTML=`<div class="card"><h3>Delete farmers by Gram Panchayat</h3><label>Gram Panchayat</label><input id="delGp"/><button class="bad" id="delFarmersBtn">Delete farmers</button></div>`;
   else if(name==="settings"||name==="Settings") panel.innerHTML=`<div class="card"><h3>Change password</h3><label>Current</label><input id="oldp" type="password"/><label>New</label><input id="newp" type="password"/><button class="go" id="chp">Update password</button>${me.role==="admin"?'<p><a href="/api/backup">Download backup</a></p>':""}</div>`;
   else if(name==="Dashboard") panel.innerHTML=schemeDash(mine);
   else if(name==="Reports") panel.innerHTML=reportView(mine);
@@ -332,6 +334,8 @@ function wire(){
     }catch(e){ alert(e.message||"Request failed"); }
   };
   const roleAdd=document.getElementById("roleAdd"); if(roleAdd) roleAdd.onclick=async()=>{ const role=roleAdd.dataset.role; const cluster=document.getElementById("ncl").value; if(!cluster) return alert("Map a cluster first"); await api("/api/users",{method:"POST", body:JSON.stringify({name:nn.value, role, cluster, mobile:nm.value, email:nmail.value, username:nu.value, password:np.value})}); alert("Mapped"); show(role==="lrp"?"LRP mapping":"Krishi Sakhi mapping"); };
+  const delClusterBtn=document.getElementById("delClusterBtn"); if(delClusterBtn) delClusterBtn.onclick=async()=>{ if(!confirm("Delete this cluster?")) return; await api("/api/clusters/"+delCluster.value,{method:"DELETE"}); alert("Cluster deleted"); render(); };
+  const delFarmersBtn=document.getElementById("delFarmersBtn"); if(delFarmersBtn) delFarmersBtn.onclick=async()=>{ if(!confirm("Delete farmers of this Gram Panchayat?")) return; const res=await api("/api/farmers/by-gp",{method:"POST", body:JSON.stringify({gp:delGp.value, scheme})}); alert(res.removed+" farmers deleted"); };
   const add=document.getElementById("nuadd"); if(add) add.onclick=async()=>{
     try {
       const role=document.getElementById("nr").value;
