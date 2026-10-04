@@ -322,13 +322,18 @@ def map_gp():
     cid = row["id"] if row else uuid.uuid4().hex
     if not row:
         con.execute("INSERT INTO clusters VALUES (?,?,?,?)", (cid, "अजमेर", tehsil, cname))
-    tree = lgd_tree()
-    for village in (tree.get(tehsil) or {}).get(gp) or []:
-        exists = con.execute("SELECT 1 FROM places WHERE cluster_id=? AND village=?", (cid, village)).fetchone()
-        if not exists:
-            con.execute("INSERT INTO places VALUES (?,?,?,?)", (uuid.uuid4().hex, cid, village, gp))
-    con.execute("UPDATE users SET cluster=? WHERE id=?", (cname, user["id"]))
-    con.commit()
+    try:
+        tree = lgd_tree()
+        villages = ((tree.get(tehsil) or {}).get(gp) or []) if isinstance(tree.get(tehsil), dict) else []
+        for village in villages:
+            exists = con.execute("SELECT 1 FROM places WHERE cluster_id=? AND village=?", (cid, village)).fetchone()
+            if not exists:
+                con.execute("INSERT INTO places VALUES (?,?,?,?)", (uuid.uuid4().hex, cid, village, gp))
+        con.execute("UPDATE users SET cluster=? WHERE id=?", (cname, user["id"]))
+        con.commit()
+    except Exception as exc:
+        con.close()
+        return jsonify({"error": "Supervisor map failed: " + str(exc)}), 400
     con.close()
     return jsonify({"ok": True, "cluster": cname})
 
