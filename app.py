@@ -691,8 +691,8 @@ def norm(v):
 
 
 TEMPLATES = {
-  "pkvy": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety"],
-  "natural": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety"],
+  "pkvy": ["Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Financial Year","KHATA NO/PLOT NO","Khasra No.","TOTAL AREA","OFFERD Area","Crop","BANK ACCOUNT NO","IFSC CODE","BARNCH ADDRES","COW","BUFFELO","GOAT","IRRIATION SOURCE","LAND TYPE","LAST DATE OF PROHIBATED INPUT"],
+  "natural": ["Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Financial Year","KHATA NO/PLOT NO","Khasra No.","TOTAL AREA","OFFERD Area","Crop","BANK ACCOUNT NO","IFSC CODE","BARNCH ADDRES","COW","BUFFELO","GOAT","IRRIATION SOURCE","LAND TYPE","LAST DATE OF PROHIBATED INPUT"],
   "minikit": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety"],
   "demo": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety"],
 }
@@ -770,6 +770,35 @@ def excel_upload():
             continue
         item["farmer"] = item.get("Farmer Name") or item.get("farmer")
         item["crop"] = item.get("Crop") or item.get("crop")
+        if scheme in ("pkvy", "natural"):
+            prefix = {"pkvy":"PKVY-F","natural":"NF-F"}[scheme]
+            item["Farmer ID"] = item["farmer_id"] = prefix + "-" + uuid.uuid4().hex[:6].upper()
+            item["Cluster ID"] = (item.get("GP") or "") + "-" + (item.get("Village") or "")
+            source = (item.get("IRRIATION SOURCE") or "").strip().lower()
+            item["IRRIGATED OR NON IRRIGATED"] = "NON IRRIGATED" if source in ("", "no", "none") else "IRRIGATED"
+            item["BARNCH ADDRES"] = item.get("GP") or item.get("Block") or ""
+            offered = float(item.get("OFFERD Area") or 0)
+            total = float(item.get("TOTAL AREA") or 0)
+            if offered and total and total < offered:
+                errors.append({"row": n, "field": "TOTAL AREA", "entered": item.get("TOTAL AREA"), "type": "error", "detail": "Total area cannot be less than offered area"})
+                continue
+            ifsc = (item.get("IFSC CODE") or "").strip().upper()
+            if ifsc and not (len(ifsc)==11 and ifsc[:4].isalpha() and ifsc[4]=="0"):
+                errors.append({"row": n, "field": "IFSC CODE", "entered": ifsc, "type": "error", "detail": "Invalid IFSC code"})
+                continue
+            year = (item.get("Financial Year") or "").strip()
+            if u["role"] not in ("admin", "district_admin") and year and year != "2026-27":
+                errors.append({"row": n, "field": "Financial Year", "entered": year, "type": "error", "detail": "Only current year is allowed. Old year can be added by System Admin or District Admin"})
+                continue
+            key = norm(item.get("Farmer Name")) + "|" + norm(item.get("Jan Aadhaar"))
+            acc = norm(item.get("BANK ACCOUNT NO"))
+            if key.strip("|") and key in seen:
+                errors.append({"row": n, "field": "Jan Aadhaar", "entered": item.get("Jan Aadhaar"), "type": "duplicate", "detail": "Same farmer name and Jan Aadhaar already uploaded"})
+                continue
+            if acc and acc in seen:
+                errors.append({"row": n, "field": "BANK ACCOUNT NO", "entered": item.get("BANK ACCOUNT NO"), "type": "duplicate", "detail": "Duplicate bank account number"})
+                continue
+            seen.add(key); seen.add(acc)
         missing = [k for k in REQUIRED_BY.get(scheme, []) if str(item.get(k) or "").strip() == ""]
         mobile = "".join(ch for ch in str(item.get("Mobile") or "") if ch.isdigit())
         if mobile and len(mobile) != 10:
@@ -814,40 +843,65 @@ def excel_upload():
 @app.post("/api/photo-excel")
 @login_required
 def photo_excel():
-    u = current()
     f = request.files.get("file")
     scheme = request.form.get("scheme") or "pkvy"
     if not f:
-        return jsonify({"error": "Choose a photo"}), 400
+        return jsonify({"ok": False, "reasons": ["Choose a photo"], "rows": []})
     raw = f.read()
-    if len(raw) > 8_000_000:
-        return jsonify({"error": "Photo must be under 8 MB"}), 400
-    import shutil, subprocess, tempfile
-    path = tempfile.mktemp(suffix=".jpg")
-    open(path, "wb").write(raw)
-    if not shutil.which("tesseract"):
-        return jsonify({"error": "Photo reader is not installed on this server. Deploy with the Docker file so Tesseract is available."}), 500
+    import io, shutil, subprocess, tempfile, re
+    from PIL import Image
+    path = tempfile.mktemp(suffix=".png")
     try:
-        text = subprocess.check_output(["tesseract", path, "stdout", "-l", "eng"], stderr=subprocess.DEVNULL, text=True)
-    except Exception as exc:
-        return jsonify({"error": "Photo could not be read: " + str(exc)}), 400
-    saved = 0
+        img = Image.open(io.BytesIO(raw)).convert("L")
+        img.thumbnail((1600, 1600))
+        img.save(path, "PNG")
+    except Exception:
+        return jsonify({"ok": False, "reasons": ["This file is not a photo"], "rows": []})
+    if not shutil.which("tesseract"):
+        return jsonify({"ok": False, "reasons": ["Photo reader is not installed on the server"], "rows": []})
+    try:
+        text = subprocess.check_output(["tesseract", path, "stdout", "-l", "eng"], stderr=subprocess.DEVNULL, text=True, timeout=20)
+    except Exception:
+        return jsonify({"ok": False, "reasons": ["Photo could not be read. Use a closer table photo."], "rows": []})
+    rows = []
+    for line in text.splitlines():
+        parts = line.split()
+        if len(parts) < 6:
+            continue
+        mobile = next((x for x in parts if re.fullmatch(r"\d{10}", x)), "")
+        if not mobile:
+            continue
+        name = parts[0]
+        village = ""
+        if "KHERA" in parts:
+            village = "NAI KHERA" if "NAI" in parts else "KHERA"
+        elif len(parts) >= 2:
+            village = parts[-2]
+        rows.append({"Farmer Name": name, "Mobile": mobile, "Village": village, "scheme": scheme})
+    reasons = []
+    if not rows:
+        reasons.append("Farmer Name, Mobile and Village were not found in the required template columns")
+    return jsonify({"ok": bool(rows), "rows": rows[:50], "text": text[:800], "reasons": reasons, "message": f"{len(rows)} farmers read" if rows else "Data does not match the template"})
+
+@app.post("/api/photo-save")
+@login_required
+def photo_save():
+    u = current()
+    data = request.json or {}
+    scheme = data.get("scheme") or "pkvy"
+    rows = data.get("rows") or []
+    if not rows:
+        return jsonify({"error": "No rows to submit"}), 400
     con = db()
     now = datetime.now().isoformat(timespec="seconds")
     prefix = {"pkvy": "PKVY-F", "natural": "NF-F", "minikit": "MK-F", "demo": "DEM-F"}.get(scheme, "F")
-    for line in text.splitlines():
-        parts = [x.strip() for x in line.replace("|", ",").split(",") if x.strip()]
-        if len(parts) < 2:
-            parts = [x for x in line.split() if x]
-        if len(parts) < 2 or not any(ch.isalpha() for ch in parts[0]):
-            continue
-        name, village = parts[0], parts[1] if len(parts) > 1 else ""
-        item = {"scheme": scheme, "farmer_id": prefix + "-" + uuid.uuid4().hex[:6].upper(), "Farmer Name": name, "farmer": name, "Village": village, "source": "photo"}
-        rid = uuid.uuid4().hex
-        con.execute("INSERT INTO records VALUES (?,?,?,?,?,?,?,?,?,?)", (rid, u["id"], u["name"], u["role"], u["cluster"], village, scheme, json.dumps(item, ensure_ascii=False), "submitted", now))
-        saved += 1
+    for row in rows:
+        item = dict(row)
+        item["farmer_id"] = prefix + "-" + uuid.uuid4().hex[:6].upper()
+        item["farmer"] = row.get("Farmer Name")
+        con.execute("INSERT INTO records VALUES (?,?,?,?,?,?,?,?,?,?)", (uuid.uuid4().hex, u["id"], u["name"], u["role"], u["cluster"], row.get("Village") or "", scheme, json.dumps(item, ensure_ascii=False), "submitted", now))
     con.commit(); con.close()
-    return jsonify({"saved": saved, "text": text[:1500], "message": f"{saved} rows read from photo"})
+    return jsonify({"ok": True, "saved": len(rows)})
 
 @app.get("/api/errors/<eid>")
 @login_required
