@@ -92,7 +92,7 @@ function allowedSchemes(){
   return ["pkvy","natural","minikit","demo"];
 }
 function home(rows){
-  const card=(key,lines)=>`<div class="card"><h3>${SCHEMES[key].title}</h3><p style="color:#6b7280">${SCHEMES[key].full}</p>${lines.map(x=>`<div class="stat">${x}</div>`).join("")}<button class="go" data-open="${key}">OPEN ${SCHEMES[key].title}</button></div>`;
+  const card=(key,lines)=>`<div class="card"><h3>${SCHEMES[key].title}</h3>${lines.map(x=>`<div class="stat">${x}</div>`).join("")}</div>`;
   const c=k=>rows.filter(r=>(r.payload.scheme||"")===k && (r.payload.year||"2026-27")===year);
   const keys=allowedSchemes();
   const lines={pkvy:["Farmers "+c("pkvy").length,"Pending "+c("pkvy").filter(r=>r.status==="submitted").length], natural:["Farmers "+c("natural").length], minikit:["Distributed "+c("minikit").length], demo:["Planned "+c("demo").length]};
