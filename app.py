@@ -742,8 +742,8 @@ def norm(v):
 
 
 TEMPLATES = {
-  "pkvy": ["Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","Aadhaar No","District","Tehsil","Block","GP","Village","Financial Year","Khata No/Plot No","Khasra No","Total Area","Offered Area","Crop","Bank Account No","IFSC Code","Branch Address","Cow","Buffalo","Goat","Irrigation Source","Land Type","Last Date of Prohibited Input"],
-  "natural": ["Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","Aadhaar No","District","Tehsil","Block","GP","Village","Financial Year","Khata No/Plot No","Khasra No","Total Area","Offered Area","Crop","Bank Account No","IFSC Code","Branch Address","Cow","Buffalo","Goat","Irrigation Source","Land Type","Last Date of Prohibited Input"],
+  "pkvy": ["Farmer Name","Father/Husband Name","age","gender","category","Jan Aadhaar","Aadhaar No","Mobile","District","Tehsil","Block","GP","Village","Financial Year","Khata No/Plot No","Khasra No","Total Area","Offered Area","Crop","Bank Account No","IFSC Code","Branch Address","Cow","Buffalo","Goat","Irrigation Source","Land Type","Last Date of Prohibited Input"],
+  "natural": ["Farmer Name","Father/Husband Name","age","gender","category","Jan Aadhaar","Aadhaar No","Mobile","District","Tehsil","Block","GP","Village","Financial Year","Khata No/Plot No","Khasra No","Total Area","Offered Area","Crop","Bank Account No","IFSC Code","Branch Address","Cow","Buffalo","Goat","Irrigation Source","Land Type","Last Date of Prohibited Input"],
   "minikit": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety"],
   "demo": ["Farmer ID","Farmer Name","Father/Husband Name","Jan Aadhaar","Mobile","District","Tehsil","Block","GP","Village","Cluster ID","Financial Year","Demonstration Type","Demonstration Category","Season","Demonstration Date","Khasra No.","Area","Crop","Variety"],
 }
