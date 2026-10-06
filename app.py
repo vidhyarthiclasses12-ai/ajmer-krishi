@@ -902,6 +902,12 @@ def excel_upload():
 @app.post("/api/photo-excel")
 @login_required
 def photo_excel():
+    try:
+        return photo_excel_run()
+    except Exception as exc:
+        return jsonify({"ok": False, "rows": [], "preview": [], "text": "", "reasons": ["Photo could not be read: " + str(exc)], "message": "Photo could not be read"})
+
+def photo_excel_run():
     f = request.files.get("file")
     scheme = request.form.get("scheme") or "pkvy"
     if not f:
