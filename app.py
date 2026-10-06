@@ -911,43 +911,35 @@ def photo_excel_run():
     f = request.files.get("file")
     scheme = request.form.get("scheme") or "pkvy"
     if not f:
-        return jsonify({"ok": False, "reasons": ["Choose a photo"], "rows": []})
+        return jsonify({"ok": False, "reasons": ["Choose a photo"], "rows": [], "preview": [], "text": ""})
     raw = f.read()
     import io, shutil, subprocess, tempfile, re
     from PIL import Image
     path = tempfile.mktemp(suffix=".png")
     try:
         img = Image.open(io.BytesIO(raw)).convert("L")
-        img.thumbnail((360, 360))
+        img.thumbnail((700, 700))
+        img = img.point(lambda x: 0 if x < 150 else 255)
         img.save(path, "PNG")
     except Exception as exc:
         return jsonify({"ok": False, "reasons": ["This file is not a photo: " + str(exc)], "rows": [], "preview": [], "text": ""})
     if not shutil.which("tesseract"):
-        return jsonify({"ok": False, "reasons": ["Photo reader is not installed on Render. Deploy with the Docker file."], "rows": [], "preview": [], "text": ""})
-    text = ""
-    err = ""
-    for args in (["--psm", "11"], ["--psm", "4"]):
-        try:
-            text = subprocess.check_output(["tesseract", path, "stdout", *args], stderr=subprocess.DEVNULL, text=True, timeout=12)
-            if text.strip():
-                break
-        except subprocess.TimeoutExpired:
-            err = "Photo reader timed out. Crop only the table and upload again."
-        except Exception as exc:
-            err = str(exc)
-    if not text.strip():
-        return jsonify({"ok": False, "reasons": [err or "No text found in the photo"], "rows": [], "preview": [], "text": ""})
+        return jsonify({"ok": False, "reasons": ["Photo reader is not installed on this server."], "rows": [], "preview": [], "text": ""})
+    try:
+        text = subprocess.check_output(["tesseract", path, "stdout", "-l", "eng", "--psm", "6"], stderr=subprocess.DEVNULL, text=True, timeout=18)
+    except subprocess.TimeoutExpired:
+        return jsonify({"ok": False, "reasons": ["Free server could not finish this photo in time. Crop only the farmer table and try again."], "rows": [], "preview": [], "text": ""})
+    except Exception as exc:
+        return jsonify({"ok": False, "reasons": ["Photo reader failed: " + str(exc)], "rows": [], "preview": [], "text": ""})
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     rows = []
     for line in lines:
         parts = line.split()
         mobile = next((x for x in parts if re.fullmatch(r"\d{10}", x)), "")
-        rows.append({"Farmer Name": parts[0] if parts else "", "Mobile": mobile, "Village": parts[-1] if len(parts)>1 else "", "line": line, "scheme": scheme})
+        rows.append({"Farmer Name": parts[0] if parts else "", "Mobile": mobile, "Village": parts[-1] if len(parts) > 1 else "", "line": line, "scheme": scheme})
     valid = [r for r in rows if r["Farmer Name"] and r["Mobile"]]
-    reasons = []
-    if not valid:
-        reasons.append("Photo was read. Template columns are incomplete, so submit stays closed.")
-    return jsonify({"ok": bool(valid), "rows": valid[:50], "preview": rows[:40], "text": text[:2000], "reasons": reasons, "message": f"{len(lines)} lines read"})
+    reasons = [] if valid else ["Photo text is on screen. Submit stays closed until a farmer name and 10-digit mobile are read."]
+    return jsonify({"ok": bool(valid), "rows": valid[:50], "preview": rows[:40], "text": text[:2000], "reasons": reasons, "message": str(len(lines)) + " lines read"})
 
 @app.post("/api/photo-save")
 @login_required
