@@ -918,14 +918,15 @@ def photo_excel_run():
     path = tempfile.mktemp(suffix=".png")
     try:
         img = Image.open(io.BytesIO(raw)).convert("L")
-        img.thumbnail((900, 900))
+        img.thumbnail((480, 480))
+        img = img.point(lambda x: 0 if x < 160 else 255)
         img.save(path, "PNG")
     except Exception as exc:
         return jsonify({"ok": False, "reasons": ["This file is not a photo: " + str(exc)], "rows": [], "preview": [], "text": ""})
     if not shutil.which("tesseract"):
         return jsonify({"ok": False, "reasons": ["Photo reader is not installed on Render. Deploy with the Docker file."], "rows": [], "preview": [], "text": ""})
     try:
-        text = subprocess.check_output(["tesseract", path, "stdout", "-l", "eng", "--psm", "6"], stderr=subprocess.DEVNULL, text=True, timeout=20)
+        text = subprocess.check_output(["tesseract", path, "stdout", "--psm", "6", "--oem", "1"], stderr=subprocess.DEVNULL, text=True, timeout=25)
     except Exception as exc:
         return jsonify({"ok": False, "reasons": ["Photo reader failed: " + str(exc)], "rows": [], "preview": [], "text": ""})
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
