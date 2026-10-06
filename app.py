@@ -919,28 +919,20 @@ def photo_excel():
     if not shutil.which("tesseract"):
         return jsonify({"ok": False, "reasons": ["Photo reader is not installed on the server"], "rows": []})
     try:
-        text = subprocess.check_output(["tesseract", path, "stdout", "-l", "eng"], stderr=subprocess.DEVNULL, text=True, timeout=20)
+        text = subprocess.check_output(["tesseract", path, "stdout", "-l", "eng", "--psm", "6"], stderr=subprocess.DEVNULL, text=True, timeout=40)
     except Exception:
         return jsonify({"ok": False, "reasons": ["Photo could not be read. Use a closer table photo."], "rows": []})
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     rows = []
-    for line in text.splitlines():
+    for line in lines:
         parts = line.split()
-        if len(parts) < 6:
-            continue
         mobile = next((x for x in parts if re.fullmatch(r"\d{10}", x)), "")
-        if not mobile:
-            continue
-        name = parts[0]
-        village = ""
-        if "KHERA" in parts:
-            village = "NAI KHERA" if "NAI" in parts else "KHERA"
-        elif len(parts) >= 2:
-            village = parts[-2]
-        rows.append({"Farmer Name": name, "Mobile": mobile, "Village": village, "scheme": scheme})
+        rows.append({"Farmer Name": parts[0] if parts else "", "Mobile": mobile, "Village": parts[-1] if len(parts)>1 else "", "line": line, "scheme": scheme})
+    valid = [r for r in rows if r["Farmer Name"] and r["Mobile"]]
     reasons = []
-    if not rows:
-        reasons.append("Farmer Name, Mobile and Village were not found in the required template columns")
-    return jsonify({"ok": bool(rows), "rows": rows[:50], "text": text[:800], "reasons": reasons, "message": f"{len(rows)} farmers read" if rows else "Data does not match the template"})
+    if not valid:
+        reasons.append("Photo was read. Template columns are incomplete, so submit stays closed.")
+    return jsonify({"ok": bool(valid), "rows": valid[:50], "preview": rows[:40], "text": text[:2000], "reasons": reasons, "message": f"{len(lines)} lines read"})
 
 @app.post("/api/photo-save")
 @login_required
