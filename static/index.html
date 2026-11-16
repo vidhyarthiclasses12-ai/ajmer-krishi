@@ -4,38 +4,222 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Ajmer Agriculture Information</title>
+<meta name="theme-color" content="#1B4D33" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Ccircle cx='20' cy='20' r='20' fill='%23E0A100'/%3E%3Cpath d='M20 32V19' stroke='%23143B27' stroke-width='2.4' stroke-linecap='round'/%3E%3Cpath d='M20 20c0-6-3.6-9.500-10-9.500 0 6.500 3.600 9.500 10 9.500Z' fill='%231B4D33'/%3E%3Cpath d='M20 17c0-5 3.200-8.500 10-8.500 0 5.600-3.200 8.500-10 8.500Z' fill='%232F8F56'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" /><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Anek+Devanagari:wght@500;600;700&family=Mukta:wght@400;500;600;700&display=swap" rel="stylesheet" />
 <style>
-  :root { --bg:#f7f8f6; --ink:#1b2420; --muted:#66736c; --green:#1f6b45; --line:#e4ebe6; }
+  :root {
+    --khet:#1B4D33; --khet-deep:#143B27; --leaf:#2F8F56; --leaf-soft:#E4F2E7; --sarson:#E0A100; --sarson-soft:#FBF1D0;
+    --mitti:#7A5230; --paper:#F2F5EF; --card:#FFFFFF; --ink:#16241B; --muted:#5E6E63; --line:#DCE5DC;
+    --red:#B3261E; --red-soft:#FBE9E7; --blue:#1F6F8B; --blue-soft:#E3F1F5;
+    --display:"Anek Devanagari","Mukta","Nirmala UI","Noto Sans Devanagari",system-ui,sans-serif;
+    --body:"Mukta","Nirmala UI","Noto Sans Devanagari","Segoe UI",system-ui,sans-serif;
+    --lift:0 1px 2px rgba(22,36,27,.06), 0 10px 24px -14px rgba(22,36,27,.22);
+    --furrow:repeating-radial-gradient(circle at 0% 100%, transparent 0 26px, rgba(255,255,255,.07) 26px 27.5px);
+  }
   * { box-sizing:border-box; }
-  body { margin:0; font-family:Inter, "Segoe UI", sans-serif; background:var(--bg); color:var(--ink); }
-  button, input, select, textarea { font:inherit; }
-  button { border:0; border-radius:8px; padding:9px 14px; cursor:pointer; }
-  input, select, textarea { width:100%; border:1px solid #d5ded8; border-radius:8px; padding:9px 11px; background:#fff; }
-  label { display:block; font-size:13px; color:var(--muted); margin:8px 0 4px; }
-  .app { display:flex; min-height:100vh; background:url('/static/main-temple.jpg') center/cover no-repeat fixed; }
-  aside { width:250px; background:rgba(214,236,214,.72); color:#14532d; padding:18px 12px; backdrop-filter:blur(2px); }
-  aside b { display:block; font-size:13px; letter-spacing:.08em; color:#14532d; padding:6px 10px 16px; }
-  aside button { display:block; width:100%; text-align:left; background:transparent; color:#14532d; margin:2px 0; border-radius:8px; }
-  aside button.active, aside button.on { background:rgba(31,107,69,.85); color:#fff; font-weight:650; }
-  main { flex:1; min-width:0; background:transparent; }
-  header { display:flex; justify-content:space-between; gap:16px; align-items:center; background:#fff; padding:14px 22px; border-bottom:1px solid var(--line); }
-  .content { padding:22px; background:rgba(255,255,255,.82); min-height:calc(100vh - 70px); }
-  .card { background:#fff; border:1px solid var(--line); border-radius:12px; padding:18px; margin-bottom:14px; }
-  .login { max-width:400px; margin:12vh auto; }
-  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
-  .schemes, .stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; }
-  .stat { background:#f4f7f5; border-radius:10px; padding:12px 14px; }
-  .go { background:var(--green); color:#fff; }
-  .line { background:#fff; border:1px solid #c9ddd1; color:var(--green); }
-  .bad { background:#fdecec; color:#9f1239; }
-  table { width:100%; border-collapse:collapse; }
-  th, td { text-align:left; padding:9px 8px; border-bottom:1px solid var(--line); font-size:14px; }
-  h2, h3 { margin:0 0 12px; font-weight:650; }
-  @media (max-width:800px) { .app { display:block; } aside { width:100%; } .grid { grid-template-columns:1fr; } header { display:block; } }
+  html { -webkit-text-size-adjust:100%; }
+  body { margin:0; font-family:var(--body); font-size:15.5px; line-height:1.55; background:var(--paper); color:var(--ink); }
+  h1, h2, h3 { font-family:var(--display); font-weight:600; line-height:1.2; margin:0 0 12px; letter-spacing:-.005em; }
+  h2 { font-size:22px; } h3 { font-size:18.5px; }
+  p { margin:0 0 12px; }
+  a { color:var(--khet); font-weight:600; text-underline-offset:3px; }
+  button, input, select, textarea { font:inherit; color:inherit; }
+  :focus-visible { outline:3px solid rgba(47,143,86,.45); outline-offset:2px; }
+
+  /* Form controls */
+  label { display:block; font-size:13.5px; font-weight:600; color:#3D4D43; margin:12px 0 5px; }
+  input, select, textarea { width:100%; min-height:42px; border:1px solid #C9D6CB; border-radius:9px; padding:8px 12px; background:#fff; transition:border-color .15s, box-shadow .15s; }
+  input:hover, select:hover { border-color:#9DB3A2; }
+  input:focus, select:focus, textarea:focus { outline:0; border-color:var(--leaf); box-shadow:0 0 0 3px rgba(47,143,86,.18); }
+  input[readonly] { background:#F1F5F1; color:var(--muted); }
+  input[type=checkbox] { width:18px; min-height:0; height:18px; vertical-align:-3px; margin-right:6px; accent-color:var(--leaf); }
+  input[type=file] { padding:6px; background:#F8FAF7; border-style:dashed; }
+  input[type=file]::file-selector-button { font:inherit; font-weight:600; border:0; border-radius:7px; padding:7px 12px; margin-right:10px; background:var(--leaf-soft); color:var(--khet); cursor:pointer; }
+  select[multiple] { min-height:110px; }
+  ::placeholder { color:#97A69B; }
+
+  /* Buttons */
+  button { border:0; border-radius:10px; min-height:40px; padding:8px 16px; font-weight:600; cursor:pointer; transition:background .15s, box-shadow .15s, transform .05s; }
+  button:active { transform:translateY(1px); }
+  .go, a.go { background:var(--khet); color:#fff; box-shadow:0 1px 0 rgba(255,255,255,.15) inset, 0 6px 14px -8px rgba(27,77,51,.7); }
+  .go:hover { background:var(--khet-deep); }
+  a.go { display:inline-block; padding:8px 16px; border-radius:10px; text-decoration:none; }
+  .line { background:#fff; border:1px solid #BFD3C4; color:var(--khet); }
+  .line:hover { background:var(--leaf-soft); }
+  .bad { background:var(--red-soft); color:var(--red); }
+  .bad:hover { background:#F6D5D1; }
+  .content button { margin:14px 6px 0 0; }
+  .content td button { margin:0; min-height:32px; padding:4px 12px; font-size:13.5px; }
+
+  /* Splash */
+  .splash { min-height:100vh; display:grid; place-items:center; background:var(--khet) var(--furrow); color:#fff; text-align:center; }
+  .splash svg { width:52px; height:52px; animation:sway 1.6s ease-in-out infinite; transform-origin:50% 90%; }
+  .splash p { margin:14px 0 0; font-family:var(--display); font-size:18px; opacity:.9; }
+  @keyframes sway { 0%,100% { transform:rotate(-5deg); } 50% { transform:rotate(5deg); } }
+
+  /* Login */
+  .gate { min-height:100vh; display:grid; grid-template-columns:minmax(0,1.15fr) minmax(360px,.85fr); }
+  .gate-field { position:relative; overflow:hidden; background:var(--khet); color:#fff; padding:clamp(28px,5vw,64px); display:flex; flex-direction:column; justify-content:space-between; gap:32px; }
+  .gate-field::before { content:""; position:absolute; inset:0; background:var(--furrow); background-size:auto; opacity:0; animation:furrows 1.1s .1s ease-out forwards; }
+  .gate-field::after { content:""; position:absolute; right:-90px; top:-90px; width:300px; height:300px; border-radius:50%; background:radial-gradient(circle, rgba(224,161,0,.95) 0 38%, rgba(224,161,0,.25) 39% 55%, transparent 56%); opacity:.9; }
+  .gate-field > * { position:relative; z-index:1; }
+  .mark { display:flex; align-items:center; gap:12px; font-family:var(--display); font-weight:600; font-size:17px; }
+  .mark svg { width:38px; height:38px; flex:none; }
+  .gate h1 { font-size:clamp(34px,5.2vw,62px); font-weight:700; line-height:1.08; max-width:11em; margin:0 0 16px; animation:rise .7s .15s cubic-bezier(.2,.7,.2,1) both; }
+  .gate-lede { font-size:clamp(16px,1.6vw,19px); max-width:30em; opacity:.92; margin:0; animation:rise .7s .28s cubic-bezier(.2,.7,.2,1) both; }
+  .gate-schemes { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1px; background:rgba(255,255,255,.18); border:1px solid rgba(255,255,255,.18); border-radius:14px; overflow:hidden; max-width:520px; animation:rise .7s .4s cubic-bezier(.2,.7,.2,1) both; }
+  .gate-schemes div { background:var(--khet); padding:14px 16px; }
+  .gate-schemes b { display:block; font-family:var(--display); font-size:17px; }
+  .gate-schemes span { font-size:13.5px; opacity:.8; }
+  .gate-form { display:flex; flex-direction:column; padding:clamp(20px,4vw,48px); background:var(--paper); }
+  .gate-form .lang-btn { align-self:flex-end; }
+  .gate-card { margin:auto 0; width:100%; max-width:400px; align-self:center; animation:rise .6s .3s cubic-bezier(.2,.7,.2,1) both; }
+  .gate-card h2 { font-size:28px; margin-bottom:4px; }
+  .gate-card .go { width:100%; min-height:46px; margin-top:20px; font-size:16.5px; }
+  .gate-note { color:var(--muted); margin-bottom:10px; }
+  #err { color:var(--red); font-weight:600; min-height:1.4em; margin:10px 0 0; }
+  .gate-foot { font-size:13px; color:var(--muted); text-align:center; margin:18px 0 0; }
+  @keyframes rise { from { opacity:0; transform:translateY(14px); } to { opacity:1; transform:none; } }
+  @keyframes furrows { to { opacity:1; } }
+
+  /* App shell */
+  .app { display:flex; min-height:100vh; }
+  aside { width:268px; flex:none; background:var(--khet) var(--furrow); color:#E8F2EA; display:flex; flex-direction:column; position:sticky; top:0; height:100vh; overflow-y:auto; }
+  .brand { display:flex; gap:11px; align-items:center; padding:18px 16px 16px; border-bottom:1px solid rgba(255,255,255,.12); }
+  .brand svg { width:36px; height:36px; flex:none; }
+  .brand b { display:block; font-family:var(--display); font-size:16.5px; line-height:1.2; color:#fff; }
+  .brand span { font-size:12.5px; opacity:.75; line-height:1.3; display:block; }
+  aside nav { padding:12px 10px; flex:1; }
+  aside nav button { display:flex; align-items:center; gap:11px; width:100%; text-align:left; background:transparent; color:#DCEADF; margin:2px 0; padding:9px 12px; font-weight:500; border-radius:9px; position:relative; }
+  aside nav button svg { width:19px; height:19px; flex:none; opacity:.85; }
+  aside nav button:hover { background:rgba(255,255,255,.09); color:#fff; }
+  aside nav button.active { background:rgba(255,255,255,.14); color:#fff; font-weight:600; }
+  aside nav button.active::before { content:""; position:absolute; left:-10px; top:8px; bottom:8px; width:4px; border-radius:0 4px 4px 0; background:var(--sarson); }
+  aside nav .group { font-size:12.5px; font-weight:600; opacity:.65; padding:14px 12px 4px; }
+  #schemeSlide button { padding-left:16px !important; }
+  #schemeSlide button::after { content:"›"; margin-left:auto; opacity:.6; font-size:18px; line-height:1; }
+  aside nav #back { background:rgba(0,0,0,.18); margin-bottom:10px; }
+  .scheme-tag { margin:4px 2px 10px; padding:12px; border-radius:11px; background:var(--sarson); color:#2A2000; }
+  .scheme-tag b { display:block; font-family:var(--display); font-size:19px; line-height:1.15; }
+  .scheme-tag span { font-size:12.5px; }
+  .side-foot { padding:12px 16px 16px; border-top:1px solid rgba(255,255,255,.12); font-size:12.5px; }
+  .side-foot label { color:#CFE0D3; margin-top:0; }
+  .side-foot select { min-height:36px; background:rgba(255,255,255,.1); border-color:rgba(255,255,255,.25); color:#fff; }
+  .side-foot select option { color:var(--ink); }
+  .side-foot p { margin:10px 0 0; opacity:.6; }
+  main { flex:1; min-width:0; }
+  header.top { position:sticky; top:0; z-index:5; display:flex; gap:14px; align-items:center; background:rgba(255,255,255,.92); backdrop-filter:blur(8px); padding:10px clamp(14px,3vw,34px); border-bottom:1px solid var(--line); min-height:66px; }
+  .top-title { min-width:0; flex:1; }
+  .top-title h1 { font-size:21px; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .top-title p { margin:0; font-size:13px; color:var(--muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .top-tools { display:flex; align-items:center; gap:10px; flex:none; }
+  .fy { display:flex; align-items:center; gap:6px; margin:0; font-size:13px; color:var(--muted); }
+  .fy select { width:auto; min-height:36px; padding:4px 8px; font-weight:600; color:var(--ink); }
+  .lang-btn { min-height:36px; padding:4px 12px; background:var(--sarson-soft); color:#5C4300; border:1px solid #EBD58A; }
+  .lang-btn:hover { background:#F6E5A6; }
+  .who { text-align:right; line-height:1.2; max-width:190px; }
+  .who b { display:block; font-size:14.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .who span { font-size:12.5px; color:var(--muted); }
+  .icon-btn { width:40px; padding:0; display:grid; place-items:center; background:transparent; color:var(--khet); border:1px solid var(--line); }
+  .icon-btn:hover { background:var(--leaf-soft); }
+  .icon-btn svg { width:20px; height:20px; }
+  #menuBtn { display:none; }
+  .scrim { display:none; }
+  .content { padding:24px clamp(14px,3vw,34px) 64px; max-width:1320px; }
+  .content > * { animation:rise .32s cubic-bezier(.2,.7,.2,1) both; }
+  .content > *:nth-child(2) { animation-delay:.05s; } .content > *:nth-child(3) { animation-delay:.1s; } .content > *:nth-child(n+4) { animation-delay:.14s; }
+
+  /* Cards and data */
+  .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:20px; margin-bottom:16px; box-shadow:var(--lift); }
+  .card > p, .muted { color:var(--muted); }
+  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:2px 16px; }
+  .grid > div > label:first-child { margin-top:10px; }
+  .welcome { margin-bottom:18px; }
+  .welcome h2 { font-size:26px; margin-bottom:2px; }
+  .welcome p { color:var(--muted); margin:0; }
+  .kpis { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin-bottom:18px; }
+  .kpi, .stat { background:var(--card); border:1px solid var(--line); border-radius:13px; padding:14px 16px; border-top:4px solid var(--tone,var(--leaf)); }
+  .kpi span { display:block; font-size:13.5px; color:var(--muted); font-weight:600; }
+  .kpi b { font-family:var(--display); font-size:34px; font-weight:700; line-height:1.1; font-variant-numeric:tabular-nums; }
+  .kpi.t-wait { --tone:var(--sarson); } .kpi.t-sign { --tone:var(--blue); } .kpi.t-bad { --tone:var(--red); } .kpi.t-all { --tone:var(--khet); }
+  .schemes { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px; }
+  .plot { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:var(--lift); display:flex; flex-direction:column; gap:12px; }
+  .plot-head { display:flex; align-items:center; gap:10px; }
+  .plot-head i { width:38px; height:38px; border-radius:11px; display:grid; place-items:center; background:var(--leaf-soft); color:var(--khet); flex:none; }
+  .plot-head i svg { width:21px; height:21px; }
+  .plot-head h3 { margin:0; font-size:19px; }
+  .plot-num { display:flex; align-items:baseline; gap:8px; }
+  .plot-num b { font-family:var(--display); font-size:44px; font-weight:700; line-height:1; font-variant-numeric:tabular-nums; }
+  .plot-num span { color:var(--muted); font-weight:600; }
+  .bar { display:flex; height:10px; border-radius:6px; overflow:hidden; background:#E9EFE9; }
+  .bar i { display:block; height:100%; }
+  .seg-wait { background:var(--sarson); } .seg-sign { background:var(--blue); } .seg-ok { background:var(--leaf); } .seg-rest { background:#B9C7BC; }
+  .legend { display:flex; flex-wrap:wrap; gap:4px 14px; font-size:13px; color:var(--muted); }
+  .legend span::before { content:""; display:inline-block; width:9px; height:9px; border-radius:3px; margin-right:6px; background:var(--dot); }
+  .legend em { font-style:normal; }
+  .plot .line { margin:auto 0 0; width:100%; }
+  .chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .chips div { background:var(--leaf-soft); color:var(--khet); border-radius:999px; padding:5px 13px; font-size:14px; font-weight:600; }
+  .table-wrap { overflow:auto; max-height:70vh; border:1px solid var(--line); border-radius:12px; background:#fff; margin-top:14px; }
+  table { width:100%; border-collapse:separate; border-spacing:0; }
+  th { position:sticky; top:0; z-index:1; background:#EAF2EA; color:#33443A; font-size:13px; font-weight:700; text-align:left; padding:10px 12px; white-space:nowrap; border-bottom:1px solid #CFDDD1; }
+  td { padding:10px 12px; font-size:14.5px; border-bottom:1px solid #EDF2ED; vertical-align:middle; font-variant-numeric:tabular-nums; }
+  tbody tr:nth-child(odd) td { background:#FAFCFA; }
+  tbody tr:hover td { background:#F0F7F1; }
+  tr:last-child td { border-bottom:0; }
+  td.empty { text-align:center; color:var(--muted); padding:28px 12px; background:#fff !important; }
+  .table-meta { font-size:13px; color:var(--muted); margin:6px 2px 0; }
+  .badge, .pill { display:inline-block; border-radius:999px; padding:2px 10px; font-size:12.5px; font-weight:700; white-space:nowrap; background:#E9EFE9; color:#44544A; }
+  .b-wait { background:var(--sarson-soft); color:#6B4E00; } .b-sign { background:var(--blue-soft); color:#134B5E; }
+  .b-ok { background:var(--leaf-soft); color:#17502F; } .b-bad { background:var(--red-soft); color:var(--red); }
+  .note { display:grid; grid-template-columns:auto 1fr; gap:2px 12px; padding:12px 0; border-bottom:1px solid #EDF2ED; }
+  .note:last-child { border-bottom:0; }
+  .note time { grid-column:2; font-size:12.5px; color:var(--muted); }
+  .note p { margin:0; }
+  pre { background:#F4F7F3; border:1px solid var(--line); border-radius:10px; padding:12px; max-height:240px; overflow:auto; font-size:13px; white-space:pre-wrap; }
+  canvas { touch-action:none; border-radius:9px; max-width:100%; display:block; }
+  .skel { height:120px; border-radius:14px; background:linear-gradient(100deg,#E7EDE6 30%,#F4F7F3 50%,#E7EDE6 70%); background-size:300% 100%; animation:shimmer 1.2s linear infinite; margin-bottom:14px; }
+  .skel.s { height:54px; max-width:340px; }
+  @keyframes shimmer { to { background-position:-150% 0; } }
+  #pdfBox { margin-top:16px; }
+  #pdfBox h2 { font-size:19px; margin-top:8px; }
+
+  /* Toasts */
+  #toasts { position:fixed; right:18px; bottom:18px; z-index:50; display:flex; flex-direction:column; gap:10px; max-width:min(420px,calc(100vw - 36px)); }
+  .toast { background:var(--khet-deep); color:#fff; border-radius:12px; padding:12px 16px; box-shadow:0 14px 34px -12px rgba(0,0,0,.45); border-left:5px solid var(--leaf); animation:rise .25s ease both; font-weight:500; }
+  .toast.warn { border-left-color:var(--sarson); }
+  .toast.out { opacity:0; transform:translateY(8px); transition:.3s; }
+
+  @media (max-width:900px) {
+    .gate { grid-template-columns:1fr; }
+    .gate-field { padding:24px 20px 28px; gap:20px; }
+    .gate-field::after { width:170px; height:170px; right:-60px; top:-60px; }
+    .gate h1 { font-size:32px; }
+    .gate-schemes { display:none; }
+    .gate-form { padding:20px; }
+    .gate-card { margin:18px 0; }
+    aside { position:fixed; left:0; top:0; z-index:30; transform:translateX(-102%); transition:transform .25s ease; box-shadow:12px 0 40px -10px rgba(0,0,0,.4); }
+    .app.nav-open aside { transform:none; }
+    .app.nav-open .scrim { display:block; position:fixed; inset:0; z-index:20; background:rgba(10,25,16,.45); }
+    #menuBtn { display:grid; }
+    .who { display:none; }
+    header.top { flex-wrap:wrap; row-gap:6px; padding-bottom:8px; }
+    .top-tools { display:contents; }
+    .fy { order:10; flex-basis:100%; justify-content:flex-end; border-top:1px solid var(--line); padding-top:6px; }
+    .fy select { min-height:32px; }
+    .top-title h1 { font-size:18px; }
+    .card { padding:16px; border-radius:13px; }
+    .kpi b { font-size:28px; }
+    #toasts { left:14px; right:14px; bottom:14px; max-width:none; }
+  }
+  @media (prefers-reduced-motion:reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-delay:0s !important; transition-duration:.01ms !important; } }
+  @media print { aside, header.top, #toasts { display:none !important; } .content { padding:0; } }
 </style>
 </head>
 <body>
-<div id="app"><div class="card login"><h2>Ajmer Agriculture Information</h2><p>Loading...</p></div></div>
+<div id="app"><div class="splash"><p>Ajmer Agriculture Information</p></div></div>
 <script>
 let me=null, blocks={}, scheme=null, tab="home", year="2026-27", realRole="";
 const SCHEMES={
@@ -50,21 +234,107 @@ async function api(url, opt={}) {
   if (!res.ok) throw new Error(data.error||res.status+" request failed");
   return data;
 }
-async function boot(){ render(); try{ me=await fetch("/api/me").then(r=>r.json()); if(!me||!me.role){ me=null; render(); return; } realRole=me.role; try{ blocks=await api("/api/meta"); }catch(e){ blocks={}; } try{ window.LGD=(await api("/api/directory")).tree||{}; }catch(e){ window.LGD={}; } try{ const only=allowedSchemes(); if(only.length===1){ scheme=only[0]; tab="Dashboard"; } }catch(e){} render(); }catch(e){ me=null; render(); } }
-function render(){ document.getElementById("app").innerHTML = me? shell(): login(); bind(); }
-function login(){ return `<div style="min-height:100vh;position:relative;background:url('https://images.unsplash.com/photo-1464226184884-fa280b87c399?auto=format&fit=crop&w=1600&q=80') center/cover no-repeat"><div style="background:#0f2744cc;color:#fff;padding:14px 22px;display:flex;justify-content:space-between;align-items:center"><div><b>Department of Agriculture Ajmer</b><div style="font-size:13px;opacity:.9">Farmer & Scheme Data Management Portal</div></div><button class="line" id="openLogin">Department login</button></div><div id="loginBox" class="card login" style="display:none"><h2>Department login</h2><label>User ID</label><input id="u"/><label>Password</label><input id="p" type="password"/><p id="err" style="color:#b91c1c"></p><button class="go" id="go" style="width:100%">Login</button><p style="font-size:12px;color:#6b7280">Version 1.0</p></div><div style="position:absolute;bottom:18px;left:0;right:0;text-align:center;color:#fff;font-size:22px;font-weight:650;text-shadow:0 1px 4px #000">Agriculture Information Management System</div></div>`; }
+async function boot(){ splash(); try{ me=await fetch("/api/me").then(r=>r.json()); if(!me||!me.role){ me=null; render(); return; } realRole=me.role; try{ blocks=await api("/api/meta"); }catch(e){ blocks={}; } try{ window.LGD=(await api("/api/directory")).tree||{}; }catch(e){ window.LGD={}; } try{ const only=allowedSchemes(); if(only.length===1){ scheme=only[0]; tab="Dashboard"; } }catch(e){} render(); }catch(e){ me=null; render(); } }
+const esc=v=>String(v==null?"":v).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ICONS={
+  grid:'<rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/>',
+  users:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5s5.9 1.9 6.5 5.5"/><path d="M16 4.8a3.5 3.5 0 0 1 0 6.4M18.5 14.8c1.7.8 2.7 2.4 3 5.2"/>',
+  data:'<path d="M12 3 3 8l9 5 9-5-9-5Z"/><path d="m3 13 9 5 9-5"/>',
+  bell:'<path d="M6 16V11a6 6 0 1 1 12 0v5l1.5 2h-15L6 16Z"/><path d="M10 21h4"/>',
+  list:'<path d="M8 6h12M8 12h12M8 18h12"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/>',
+  gear:'<path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/>',
+  trash:'<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+  sprout:'<path d="M12 21v-8"/><path d="M12 13c0-4-2.5-6.5-7-6.5 0 4.5 2.5 6.5 7 6.5Z"/><path d="M12 11c0-3.5 2.2-6 7-6 0 4-2.2 6-7 6Z"/>',
+  upload:'<path d="M12 16V4M7 9l5-5 5 5M4 20h16"/>',
+  check:'<path d="m5 12.5 4.5 4.5L19 7.5"/>',
+  chart:'<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
+  map:'<path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21Z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  rupee:'<path d="M7 5h10M7 9h10M7 5c5 0 7 1.5 7 4s-2 4-7 4l7 7"/>',
+  file:'<path d="M7 3h7l4 4v14H7V3Z"/><path d="M14 3v4h4M10 12h5M10 16h5"/>',
+  back:'<path d="M19 12H5M11 6l-6 6 6 6"/>',
+  menu:'<path d="M4 7h16M4 12h16M4 17h16"/>',
+  out:'<path d="M15 4h4v16h-4M10 8l-4 4 4 4M6 12h9"/>'
+};
+const ic=n=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[n]||ICONS.file}</svg>`;
+const LOGO=`<svg viewBox="0 0 40 40" aria-hidden="true"><circle cx="20" cy="20" r="20" fill="#E0A100"/><path d="M20 32V19" stroke="#143B27" stroke-width="2.4" stroke-linecap="round"/><path d="M20 20c0-6-3.6-9.5-10-9.5 0 6.500 3.600 9.500 10 9.500Z" fill="#1B4D33"/><path d="M20 17c0-5 3.200-8.500 10-8.500 0 5.600-3.200 8.500-10 8.500Z" fill="#2F8F56"/></svg>`;
+const iconFor=id=>({home:"grid",Dashboard:"grid",users:"users",masters:"data",notes:"bell",log:"list",settings:"gear","delete-cluster":"trash","delete-farmers":"trash","Farmer Payment List":"rupee","Cluster map":"map","Bulk Upload":"upload",Complete:"check",Reports:"chart"}[id]||(/Master$/.test(id)?"sprout":/mapping$/.test(id)?"users":"file"));
+const ROLE_NAMES={admin:"System Admin",district_admin:"District Admin",aao:"Assistant Agriculture Officer",supervisor:"Agriculture Supervisor",lrp:"LRP",krishi_sakhi:"Krishi Sakhi",crp:"CRP"};
+const TITLES={home:"Main Dashboard",users:"Users & Roles",masters:"Master Data",notes:"Notifications",log:"Audit Log",settings:"Settings","delete-cluster":"Delete cluster","delete-farmers":"Delete farmers by GP"};
+const SCHEME_ICON={pkvy:"sprout",natural:"sprout",minikit:"data",demo:"map"};
+const STATUS={submitted:["Submitted","b-wait"],draft:["Draft",""],returned:["Returned","b-bad"],correction_required:["Correction required","b-bad"],rejected:["Rejected","b-bad"],approved:["Approved","b-ok"],aao_approved:["Approved by AAO","b-ok"],signed:["Signed","b-sign"],supervisor_signed:["Signed by Supervisor","b-sign"],sakhi_signed:["Signed by Krishi Sakhi","b-sign"],lrp_signed:["Signed by LRP","b-sign"],crp_signed:["Signed by CRP","b-sign"]};
+const badge=s=>{ const d=STATUS[s]||[s,""]; return `<span class="badge ${d[1]}">${esc(d[0])}</span>`; };
+const langBtn=()=>`<button id="lang" class="lang-btn" type="button">${window.LANG==="hi"?"English":"हिंदी"}</button>`;
+
+function splash(){ document.getElementById("app").innerHTML=`<div class="splash"><div>${LOGO}<p>${window.LANG==="hi"?"खुल रहा है…":"Opening…"}</p></div></div>`; }
+function render(){ const app=document.getElementById("app"); document.documentElement.lang=window.LANG==="hi"?"hi":"en"; app.innerHTML = me? shell(): login(); bind(); bindExtra(); polish(); }
+function login(){ return `<div class="gate">
+  <section class="gate-field">
+    <div class="mark">${LOGO}<span>Department of Agriculture, Ajmer</span></div>
+    <div><h1>Farmer and scheme records for Ajmer district</h1><p class="gate-lede">Register farmers, send lists for signature and print payment and PGS reports from one place.</p></div>
+    <div class="gate-schemes"><div><b>PKVY</b><span>Clusters of 25 farmers</span></div><div><b>Natural Farming</b><span>Clusters of 125 farmers</span></div><div><b>Minikit</b><span>Seed distribution</span></div><div><b>Demonstration</b><span>Crop demonstrations</span></div></div>
+  </section>
+  <section class="gate-form">${langBtn()}
+    <div class="gate-card"><h2>Department login</h2><p class="gate-note">Use the User ID given by your office.</p>
+      <label for="u">User ID</label><input id="u" autocomplete="username" autocapitalize="none"/>
+      <label for="p">Password</label><input id="p" type="password" autocomplete="current-password"/>
+      <p id="err" role="alert"></p><button class="go" id="go">Log in</button>
+      <p class="gate-foot">Agriculture Information Management System · Version 1.0</p></div>
+  </section></div>`; }
 function shell(){
-  const HI={"Dashboard":"डैशबोर्ड","Farmer Master":"किसान मास्टर","Users & Roles":"यूजर और रोल","Master Data":"मास्टर डेटा","Notifications":"सूचना","Audit Log":"ऑडिट","Settings":"सेटिंग","PKVY Master":"पीकेवीवाई मास्टर","Natural Farming Master":"प्राकृतिक खेती मास्टर","Farmer Payment List":"किसान भुगतान सूची","PGS Data Information":"पीजीएस जानकारी","Activity Report":"गतिविधि रिपोर्ट","Result":"परिणाम","Bulk Upload":"बल्क अपलोड","Complete":"पूर्ण","Reports":"रिपोर्ट","Logout":"लॉगआउट","Hindi":"English"};
-  const label=m=>window.LANG==="hi"?(HI[m]||m):m;
-  const items = scheme? SCHEMES[scheme].menu.map(m=>[m,label(m)]) : [["home",label("Dashboard")],["users",label("Users & Roles")],["masters",label("Master Data")],["notes",label("Notifications")],["log",label("Audit Log")],["settings",label("Settings")]].concat(me.role==="admin"?[["delete-cluster","Delete cluster"],["delete-farmers","Delete farmers by GP"]]:[]);
-  let only=["pkvy","natural","minikit","demo"]; try{ only=allowedSchemes(); }catch(e){} const schemeSlide = scheme?"":(only.length===1?`<button data-s="${only[0]}">${SCHEMES[only[0]].title}</button>`:`<button data-slide="schemes">Schemes</button><div id="schemeSlide" style="display:none">${only.map(k=>`<button data-s="${k}" style="padding-left:22px">${SCHEMES[k].title}</button>`).join("")}</div>`);
-  return `<div class="app"><aside><b>Farmer & Scheme Data Management Portal</b>${items.filter(([id])=>id==="home").map(([id,label])=>`<button data-t="${id}" class="${tab===id?"active":""}">${label}</button>`).join("")}${scheme?"":schemeSlide}${items.filter(([id])=>id!=="home").map(([id,label])=>`<button data-t="${id}" class="${tab===id?"active":""}">${label}</button>`).join("")}${scheme?`<button id="back">Main Dashboard</button>`:""}</aside>
-  <main><header><div><b>Department of Agriculture, Ajmer</b><div style="font-size:12px;color:#6b7280">${scheme?SCHEMES[scheme].full:"Agriculture Information Management System"} · FY ${year}</div></div>
-  <span>${realRole==="admin"?`<select id="viewAs"><option value="admin">System Admin</option><option value="district_admin">District Admin</option><option value="aao">AAO</option><option value="supervisor">Supervisor</option><option value="lrp">LRP</option><option value="krishi_sakhi">Krishi Sakhi / CRP</option></select>`:""}<select id="fy"><option>2025-26</option><option selected>2026-27</option><option>2027-28</option></select> <button id="lang" class="line">${window.LANG==="hi"?"English":"Hindi"}</button> ${me.name} · ${me.role} <button id="out" class="line">${window.LANG==="hi"?"लॉगआउट":"Logout"}</button></span></header>
+  const items = scheme? SCHEMES[scheme].menu.map(m=>[m,m]) : [["home","Dashboard"],["users","Users & Roles"],["masters","Master Data"],["notes","Notifications"],["log","Audit Log"],["settings","Settings"]].concat(me.role==="admin"?[["delete-cluster","Delete cluster"],["delete-farmers","Delete farmers by GP"]]:[]);
+  const navBtn=([id,label])=>`<button data-t="${id}" class="${tab===id?"active":""}">${ic(iconFor(id))}<span>${label}</span></button>`;
+  let only=["pkvy","natural","minikit","demo"]; try{ only=allowedSchemes(); }catch(e){}
+  const sBtn=k=>`<button data-s="${k}">${ic(SCHEME_ICON[k])}<span>${SCHEMES[k].title}</span></button>`;
+  const schemeSlide = scheme?"":(only.length===1?sBtn(only[0]):`<button data-slide="schemes" class="group">Schemes</button><div id="schemeSlide" style="display:block">${only.map(sBtn).join("")}</div>`);
+  const fys=["2025-26","2026-27","2027-28"].map(y=>`<option ${y===year?"selected":""}>${y}</option>`).join("");
+  return `<div class="app"><aside>
+    <div class="brand">${LOGO}<div><b>Department of Agriculture, Ajmer</b><span>Farmer & Scheme Data Management Portal</span></div></div>
+    <nav>${scheme?`<button id="back">${ic("back")}<span>Main Dashboard</span></button><div class="scheme-tag"><b>${SCHEMES[scheme].title}</b><span>${SCHEMES[scheme].full}</span></div>`:""}${items.filter(([id])=>id==="home").map(navBtn).join("")}${schemeSlide}${scheme?"":`<div class="group">Administration</div>`}${items.filter(([id])=>id!=="home").map(navBtn).join("")}</nav>
+    <div class="side-foot">${realRole==="admin"?`<label for="viewAs">View as</label><select id="viewAs"><option value="admin">System Admin</option><option value="district_admin">District Admin</option><option value="aao">AAO</option><option value="supervisor">Supervisor</option><option value="lrp">LRP</option><option value="krishi_sakhi">Krishi Sakhi / CRP</option></select>`:""}<p>Version 1.0</p></div>
+  </aside><div class="scrim" id="scrim"></div>
+  <main><header class="top"><button class="icon-btn" id="menuBtn" type="button" aria-label="Menu">${ic("menu")}</button>
+    <div class="top-title"><h1 id="pageTitle"></h1><p>${scheme?SCHEMES[scheme].title:"Agriculture Information Management System"}</p></div>
+    <div class="top-tools"><label class="fy"><span>FY</span><select id="fy" aria-label="Financial Year">${fys}</select></label>${langBtn()}<div class="who"><b>${esc(me.name)}</b>${ROLE_NAMES[me.role]===me.name?"":`<span>${ROLE_NAMES[me.role]||esc(me.role)}</span>`}</div><button id="out" class="icon-btn" type="button" aria-label="Logout" title="Logout">${ic("out")}</button></div></header>
   <div class="content" id="panel"></div></main></div>`;
 }
+function markNav(name){
+  document.querySelectorAll("aside button[data-t]").forEach(b=>b.classList.toggle("active", b.dataset.t===name));
+  const h=document.getElementById("pageTitle"); if(h) h.textContent=TITLES[name]||name;
+  const app=document.querySelector(".app"); if(app) app.classList.remove("nav-open");
+  const panel=document.getElementById("panel"); if(panel) panel.innerHTML=`<div class="skel s"></div><div class="skel"></div><div class="skel"></div>`;
+}
+function bindExtra(){
+  const lb=document.getElementById("lang"); if(lb) lb.onclick=()=>{ window.LANG=window.LANG==="hi"?"en":"hi"; try{ localStorage.setItem("lang", window.LANG); }catch(e){} render(); };
+  const go=document.getElementById("go"); if(go) ["u","p"].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener("keydown",e=>{ if(e.key==="Enter") go.click(); }); });
+  const app=document.querySelector(".app"), mb=document.getElementById("menuBtn"), sc=document.getElementById("scrim");
+  if(mb) mb.onclick=()=>app.classList.toggle("nav-open"); if(sc) sc.onclick=()=>app.classList.remove("nav-open");
+}
+function home(rows){
+  const c=k=>rows.filter(r=>(r.payload.scheme||"")===k && (r.payload.year||"2026-27")===year);
+  const keys=allowedSchemes();
+  const noun={pkvy:"Farmers",natural:"Farmers",minikit:"Distributed",demo:"Planned"};
+  const split=list=>{ const wait=list.filter(r=>r.status==="submitted").length, sign=list.filter(r=>/signed$/.test(r.status)).length, ok=list.filter(r=>/approved$/.test(r.status)).length; return {n:list.length, wait, sign, ok, rest:list.length-wait-sign-ok}; };
+  const all=split(keys.flatMap(c));
+  const pct=(a,n)=>n?(a/n*100).toFixed(1):0;
+  const card=k=>{ const s=split(c(k)); return `<div class="plot"><div class="plot-head"><i>${ic(SCHEME_ICON[k])}</i><h3>${SCHEMES[k].title}</h3></div>
+    <div class="plot-num"><b>${s.n}</b><span>${noun[k]}</span></div>
+    <div class="bar" aria-hidden="true"><i class="seg-wait" style="width:${pct(s.wait,s.n)}%"></i><i class="seg-sign" style="width:${pct(s.sign,s.n)}%"></i><i class="seg-ok" style="width:${pct(s.ok,s.n)}%"></i><i class="seg-rest" style="width:${pct(s.rest,s.n)}%"></i></div>
+    <div class="legend"><span style="--dot:var(--sarson)"><em>Pending</em> ${s.wait}</span><span style="--dot:var(--blue)"><em>Signed</em> ${s.sign}</span><span style="--dot:var(--leaf)"><em>Approved</em> ${s.ok}</span></div>
+    <button class="line" data-open="${k}">Open scheme</button></div>`; };
+  const scope=me.role==="supervisor"?"All schemes of your Gram Panchayat":me.role==="lrp"?"PKVY only":me.role==="krishi_sakhi"||me.role==="crp"?"Natural Farming only":"All schemes";
+  return `<div class="welcome"><h2><span>Namaste</span>, ${esc(me.name)}</h2><p><span>${scope}</span> · <span>Financial Year</span> ${year}</p></div>
+    <div class="kpis"><div class="kpi t-all"><span>Total records</span><b>${all.n}</b></div><div class="kpi t-wait"><span>Pending signature</span><b>${all.wait}</b></div><div class="kpi t-sign"><span>Signed</span><b>${all.sign}</b></div><div class="kpi"><span>Approved</span><b>${all.ok}</b></div></div>
+    <div class="schemes">${keys.map(card).join("")}</div>`;
+}
+function schemeDash(rows){
+  const mapped=Object.entries(blocks).filter(([n,c])=>(c.schemes||[]).includes(scheme)).map(([n,c])=>`<div>${esc(n)}${c.gp||c.block?" · "+esc(c.gp||c.block):""}</div>`).join("");
+  const n=s=>rows.filter(r=>r.status===s).length;
+  return `<div class="kpis"><div class="kpi t-all"><span>Records</span><b>${rows.length}</b></div><div class="kpi t-wait"><span>Pending</span><b>${n("submitted")}</b></div><div class="kpi"><span>Approved</span><b>${n("approved")}</b></div><div class="kpi t-bad"><span>Rejected</span><b>${n("rejected")}</b></div></div>
+    <div class="card"><h3>Mapped clusters</h3>${mapped?`<div class="chips" data-raw>${mapped}</div>`:`<p class="muted">No mapped cluster yet</p>`}</div>`;
+}
+async function notePage(){ const rows=await api('/api/notifications'); return `<div class="card"><h3>Notifications</h3>${rows.map(n=>`<div class="note" data-raw><div>${badge(n.status)}</div><p>${esc(n.note||"")}</p><time>${esc(String(n.at||"").replace("T"," ").slice(0,16))} · ${esc(n.by_name||"")}</time></div>`).join("")||'<p class="muted">No notifications</p>'}</div>`; }
 async function show(name){
-  tab=name;
+  tab=name; markNav(name);
   const rows=await api("/api/records");
   const mine=scheme? rows.filter(r=>r.form_type!=="farmer_master" && ((r.payload.scheme||r.form_type)===scheme || (r.payload.scheme||"")===scheme)) : rows;
   const farmers=rows.filter(r=>r.form_type==="farmer_master");
@@ -97,21 +367,6 @@ function allowedSchemes(){
   if(me.role==="supervisor") return ["pkvy","natural","minikit","demo"];
   return ["pkvy","natural","minikit","demo"];
 }
-function home(rows){
-  const card=(key,lines)=>`<div class="card"><h3>${SCHEMES[key].title}</h3>${lines.map(x=>`<div class="stat">${x}</div>`).join("")}</div>`;
-  const c=k=>rows.filter(r=>(r.payload.scheme||"")===k && (r.payload.year||"2026-27")===year);
-  const keys=allowedSchemes();
-  const lines={pkvy:["Farmers "+c("pkvy").length,"Pending "+c("pkvy").filter(r=>r.status==="submitted").length], natural:["Farmers "+c("natural").length], minikit:["Distributed "+c("minikit").length], demo:["Planned "+c("demo").length]};
-  return `<h2>Main Dashboard</h2><p style="color:#6b7280">${me.role==="supervisor"?"Agriculture Supervisor · apni gram panchayat ki sabhi scheme":me.role==="lrp"?"LRP · sirf PKVY":me.role==="krishi_sakhi"||me.role==="crp"?"Natural Farming only":"All schemes"}</p><div class="schemes">${keys.map(k=>card(k, lines[k])).join("")}</div>`;
-}
-function schemeDash(rows){
-  const mapped=Object.entries(blocks).filter(([n,c])=>(c.schemes||[]).includes(scheme)).map(([n,c])=>`<div>${n} · ${c.gp||c.block||""}</div>`).join("")||"<p class='muted'>No mapped cluster yet</p>";
-  return `<div class="card"><h3>${SCHEMES[scheme].title} Dashboard</h3><div class="schemes">
-    <div class="stat">Records ${rows.length}</div><div class="stat">Pending ${rows.filter(r=>r.status==="submitted").length}</div>
-    <div class="stat">Approved ${rows.filter(r=>r.status==="approved").length}</div><div class="stat">Rejected ${rows.filter(r=>r.status==="rejected").length}</div>
-  </div><h3>Mapped clusters</h3>${mapped}</div>`;
-}
-
 function roleMapView(name){
   const role=name==="LRP mapping"?"lrp":"krishi_sakhi";
   const title=role==="lrp"?"LRP mapping · PKVY":"Krishi Sakhi / CRP mapping · Natural Farming";
@@ -205,7 +460,7 @@ function verifyView(rows){
       <label>Remark</label><input id="rm-${r.id}"/>
       <label>Draw signature</label><canvas id="sig-${r.id}" width="280" height="80" style="border:1px solid #ccc;background:#fff"></canvas>
       <button type="button" class="line" data-clear="${r.id}">Clear</button>
-      <label>Ya signature photo</label><input id="sigf-${r.id}" type="file" accept="image/*"/>
+      <label>Or upload a signature photo</label><input id="sigf-${r.id}" type="file" accept="image/*"/>
       <button class="go" data-wf="${r.id}" data-a="sign">Sign & submit</button>
       <button class="line" data-wf="${r.id}" data-a="return">Return</button>
     </div>`).join("")||"<p>No pending records. They appear for AAO only after the supervisor signs.</p>"}</div>`;
@@ -230,10 +485,9 @@ function clusterView(users=[]){
   const gpMap = (me.role==="admin"||me.role==="district_admin") ? `<div class="card"><h3>Supervisor GP map</h3><p>Mapping a GP will automatically add its cluster and villages.</p><label>Supervisor</label><select id="supUser">${users.filter(u=>u.role==="supervisor"&&u.active!==0).map(u=>`<option value="${u.username}">${u.name} · ${u.username}</option>`).join("")||"<option value=\"\">Create a supervisor first</option>"}</select><div class="grid"><div><label>Tehsil</label><select id="steh">${Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("")}</select></div><div><label>Gram Panchayat</label><select id="sgp"></select></div></div><button class="go" id="mapGp">Map GP</button></div>` : "";
   return `<div class="card"><h3>Master Data</h3><p>Tehsil ${Object.keys(window.LGD||{}).length}</p></div>${map}${gpMap}`;
 }
-async function notePage(){ const rows=await api('/api/notifications'); return `<div class='card'><h3>Notifications</h3>${rows.map(n=>`<div>${n.at} · ${n.status} · ${n.note||''} · ${n.by_name}</div>`).join('')||'No notifications'}</div>`; }
 function excelView(){ const key=scheme||"pkvy"; return `<div class="card"><h3>${scheme?SCHEMES[scheme].title:"Scheme"} Excel</h3><p><a href="/api/template?scheme=${key}">Download ${key} template</a></p><input id="xf" type="file" accept=".xlsx,.jpg,.jpeg,.png"/><button class="line" id="xp">Preview</button> <button class="go" id="xu">Upload Excel</button><p>Or photo / handwritten sheet</p><input id="pf" type="file" accept="image/*" capture="environment"/><button class="line" id="pu">Read photo</button><div id="xr"></div><p>Add a photo from the form camera or gallery.</p></div>`; }
 function logView(rows){ const logs=rows.flatMap(r=>(r.history||[]).map(h=>`<tr><td>${h.at.slice(0,16)}</td><td>${h.by_name}</td><td>${h.status}</td><td>${h.note||""}</td></tr>`)); return `<div class="card"><h3>Audit Log</h3><table><tr><th>Time</th><th>User</th><th>Status</th><th>Remark</th></tr>${logs.join("")}</table></div>`; }
-async function userView(){ if(me.role!=="admin"&&me.role!=="district_admin") return `<div class="card">Only System Admin and District Admin can manage users.</div>`; const users=await api("/api/users"); return `<div class="card"><h3>New user</h3><div class="grid"><div><label>Name</label><input id="nn"/></div><div><label>Role</label><select id="nr">${me.role==="admin"?'<option value="district_admin">District Admin</option>':''}<option value="aao">Assistant Agriculture Officer</option><option value="supervisor">Agriculture Supervisor</option></select></div><div id="clusterBox"><label>Mapped cluster</label><select id="ncl"></select></div><div id="postBox"><label>Post</label><input id="npost" placeholder="Agriculture Research Officer"/></div><div><label>Mobile</label><input id="nm"/></div><div><label>Email</label><input id="nmail"/></div><div><label>Username</label><input id="nu"/></div><div><label>Password</label><input id="np"/></div></div><div id="aaoBox"><label>AAO mapping</label><div class="grid"><div><label>Block</label><select id="aaoBlock">${Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("")}</select></div><div><label>Supervisors in block</label><select id="aaoSup" multiple></select></div><div><label>Office is at</label><select id="aaoOffice"><option value="block">Block</option><option value="gp">Gram Panchayat</option></select></div><div><label>Office name</label><select id="aaoOfficeName"></select></div></div></div><div id="supGpBox"><label>Supervisor GP assign</label><div class="grid"><div><label>Tehsil</label><select id="nteh">${Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("")}</select></div><div><label>Gram Panchayat</label><select id="ngp"></select></div></div></div><button class="go" id="nuadd">Add</button><div>${users.filter(u=>u.active!==0).map(u=>`<div>${u.name} · ${u.role} · ${u.username} ${me.role==="admin"&&u.id!==me.id?`<button class="bad" data-del="${u.id}">Delete</button>`:""}</div>`).join("")}</div></div>`; }
+async function userView(){ if(me.role!=="admin"&&me.role!=="district_admin") return `<div class="card">Only System Admin and District Admin can manage users.</div>`; const users=await api("/api/users"); return `<div class="card"><h3>New user</h3><div class="grid"><div><label>Name</label><input id="nn"/></div><div><label>Role</label><select id="nr">${me.role==="admin"?'<option value="district_admin">District Admin</option>':''}<option value="aao">Assistant Agriculture Officer</option><option value="supervisor">Agriculture Supervisor</option></select></div><div id="clusterBox"><label>Mapped cluster</label><select id="ncl"></select></div><div id="postBox"><label>Post</label><input id="npost" placeholder="Agriculture Research Officer"/></div><div><label>Mobile</label><input id="nm"/></div><div><label>Email</label><input id="nmail"/></div><div><label>Username</label><input id="nu"/></div><div><label>Password</label><input id="np"/></div></div><div id="aaoBox"><label>AAO mapping</label><div class="grid"><div><label>Block</label><select id="aaoBlock">${Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("")}</select></div><div><label>Supervisors in block</label><select id="aaoSup" multiple></select></div><div><label>Office is at</label><select id="aaoOffice"><option value="block">Block</option><option value="gp">Gram Panchayat</option></select></div><div><label>Office name</label><select id="aaoOfficeName"></select></div></div></div><div id="supGpBox"><label>Supervisor GP assign</label><div class="grid"><div><label>Tehsil</label><select id="nteh">${Object.keys(window.LGD||{}).map(t=>`<option>${t}</option>`).join("")}</select></div><div><label>Gram Panchayat</label><select id="ngp"></select></div></div></div><button class="go" id="nuadd">Add</button></div><div class="card"><h3>Users</h3><table><tr><th>Name</th><th>Role</th><th>Username</th><th>Cluster</th><th>Mobile</th><th>Action</th></tr>${users.filter(u=>u.active!==0).map(u=>`<tr><td>${esc(u.name)}</td><td><span class="badge">${ROLE_NAMES[u.role]||esc(u.role)}</span></td><td>${esc(u.username)}</td><td>${esc(u.cluster||"")}</td><td>${esc(u.mobile||"")}</td><td>${me.role==="admin"&&u.id!==me.id?`<button class="bad" data-del="${u.id}">Delete</button>`:""}</td></tr>`).join("")}</table></div>`; }
 function fillVillages(){ const teh=document.getElementById("fteh"), gp=document.getElementById("fgp"), vill=document.getElementById("village"); if(!teh||!gp||!vill) return; const keep=gp.value; gp.innerHTML=Object.keys((window.LGD||{})[teh.value]||{}).map(g=>`<option ${g===keep?"selected":""}>${g}</option>`).join(""); vill.innerHTML=(((window.LGD||{})[teh.value]||{})[gp.value]||[]).map(v=>`<option>${v}</option>`).join(""); }
 async function saveRecord(status){
   const payload={ scheme, year, section:tab, application_no:(scheme||"GEN").toUpperCase()+"-"+Date.now().toString().slice(-8), farmer: (document.getElementById("farmer")||{}).value || (document.getElementById("searchFarmer")||{}).value, status };
@@ -352,13 +606,89 @@ function wire(){
   applyLang();
 }
 function filterCards(el){ document.querySelectorAll("[data-q]").forEach(n=>n.style.display=n.dataset.q.toLowerCase().includes(el.value.toLowerCase())?"":"none"); }
-function applyLang(){
-  if(window.LANG!=="hi") return;
-  const map=[["Farmer Payment List","किसान भुगतान सूची"],["Father/Husband Name","पिता/पति का नाम"],["Jan Aadhaar","जन आधार"],["Aadhaar No","आधार नंबर"],["Aadhaar","आधार"],["Farmer Name","किसान का नाम"],["Bank account","बैंक खाता"],["Bank branch","बैंक शाखा"],["Area hectare","क्षेत्र हेक्टेयर"],["Financial Year","वित्तीय वर्ष"],["Gram Panchayat","ग्राम पंचायत"],["Upload Excel","एक्सेल अपलोड"],["Read photo","फोटो पढ़ें"],["Generate PDF","पीडीएफ बनाएँ"],["Export Excel","एक्सेल निकालें"],["Update payment","भुगतान अपडेट"],["Send for sign","साइन के लिए भेजें"],["Sign & submit","साइन और जमा"],["Save draft","ड्राफ्ट सेव"],["Bulk Upload","बल्क अपलोड"],["Select year","वर्ष चुनें"],["Village","गाँव"],["Mobile","मोबाइल"],["Caste","जाति"],["Category","श्रेणी"],["Calculate","गणना"],["Submit","जमा करें"],["Preview","पूर्वावलोकन"],["Logout","लॉगआउट"],["Year","वर्ष"],["Name","नाम"],["Role","भूमिका"],["Password","पासवर्ड"]];
-  const walk=document.createTreeWalker(document.getElementById("app"), NodeFilter.SHOW_TEXT);
-  const nodes=[]; while(walk.nextNode()) nodes.push(walk.currentNode);
-  nodes.forEach(n=>{ let v=n.nodeValue; map.forEach(([a,b])=>{ if(v.includes(a)) v=v.split(a).join(b); }); n.nodeValue=v; });
+const HI={
+  "Opening…":"खुल रहा है…","Department of Agriculture, Ajmer":"कृषि विभाग, अजमेर","Farmer & Scheme Data Management Portal":"किसान एवं योजना डेटा प्रबंधन पोर्टल","Agriculture Information Management System":"कृषि सूचना प्रबंधन प्रणाली",
+  "Farmer and scheme records for Ajmer district":"अजमेर ज़िले के किसान और योजना रिकॉर्ड","Register farmers, send lists for signature and print payment and PGS reports from one place.":"किसान दर्ज करें, सूची हस्ताक्षर के लिए भेजें और भुगतान व PGS रिपोर्ट एक ही जगह से निकालें।",
+  "Clusters of 25 farmers":"25 किसानों के क्लस्टर","Clusters of 125 farmers":"125 किसानों के क्लस्टर","Seed distribution":"बीज वितरण","Crop demonstrations":"फसल प्रदर्शन",
+  "Department login":"विभागीय लॉगिन","Use the User ID given by your office.":"अपने कार्यालय से मिली यूज़र आईडी डालें।","User ID":"यूज़र आईडी","Password":"पासवर्ड","Log in":"लॉगिन करें","Version 1.0":"संस्करण 1.0","Logout":"लॉगआउट",
+  "Dashboard":"डैशबोर्ड","Main Dashboard":"मुख्य डैशबोर्ड","Users & Roles":"यूज़र और भूमिकाएँ","Master Data":"मास्टर डेटा","Notifications":"सूचनाएँ","Audit Log":"ऑडिट लॉग","Settings":"सेटिंग","Delete cluster":"क्लस्टर हटाएँ","Delete farmers by GP":"ग्राम पंचायत के किसान हटाएँ","Schemes":"योजनाएँ","Administration":"प्रबंधन","View as":"इस भूमिका में देखें","FY":"वित्तीय वर्ष","Financial Year":"वित्तीय वर्ष",
+  "PKVY":"PKVY","Natural Farming":"प्राकृतिक खेती","Minikit":"मिनीकिट","Demonstration":"प्रदर्शन","PKVY Master only":"केवल PKVY मास्टर","Natural Farming Master only":"केवल प्राकृतिक खेती मास्टर","Minikit Master only":"केवल मिनीकिट मास्टर","Demonstration Master only":"केवल प्रदर्शन मास्टर",
+  "LRP mapping":"LRP मैपिंग","Krishi Sakhi mapping":"कृषि सखी मैपिंग","Farmer Payment List":"किसान भुगतान सूची","PGS Data Information":"PGS डेटा जानकारी","Activity Report":"गतिविधि रिपोर्ट","Cluster map":"क्लस्टर मैप","Bulk Upload":"बल्क अपलोड","Complete":"हस्ताक्षर व पूर्ण","Reports":"रिपोर्ट","First Information":"प्रथम सूचना","Distribution":"वितरण","Result":"परिणाम","Sowing Report":"बुवाई रिपोर्ट","Submit Information":"जानकारी जमा करें","Farmer Master":"किसान मास्टर","Farmer list":"किसान सूची",
+  "System Admin":"सिस्टम एडमिन","District Admin":"ज़िला एडमिन","Assistant Agriculture Officer":"सहायक कृषि अधिकारी","Agriculture Supervisor":"कृषि पर्यवेक्षक","AAO":"सहायक कृषि अधिकारी","Supervisor":"कृषि पर्यवेक्षक","Krishi Sakhi":"कृषि सखी","Krishi Sakhi / CRP":"कृषि सखी / CRP","LRP":"LRP","CRP":"CRP",
+  "Namaste":"नमस्ते","All schemes":"सभी योजनाएँ","All schemes of your Gram Panchayat":"आपकी ग्राम पंचायत की सभी योजनाएँ","PKVY only":"केवल PKVY","Natural Farming only":"केवल प्राकृतिक खेती",
+  "Total records":"कुल रिकॉर्ड","Pending signature":"हस्ताक्षर बाकी","Signed":"हस्ताक्षरित","Approved":"स्वीकृत","Pending":"लंबित","Rejected":"अस्वीकृत","Records":"रिकॉर्ड","Farmers":"किसान","Distributed":"वितरित","Planned":"नियोजित","Open scheme":"योजना खोलें","Mapped clusters":"मैप किए गए क्लस्टर","No mapped cluster yet":"अभी कोई क्लस्टर मैप नहीं है",
+  "Submitted":"जमा","Draft":"ड्राफ्ट","Returned":"वापस भेजा","Correction required":"सुधार ज़रूरी","Approved by AAO":"सहायक कृषि अधिकारी द्वारा स्वीकृत","Signed by Supervisor":"पर्यवेक्षक के हस्ताक्षर","Signed by Krishi Sakhi":"कृषि सखी के हस्ताक्षर","Signed by LRP":"LRP के हस्ताक्षर","Signed by CRP":"CRP के हस्ताक्षर",
+  "Name":"नाम","Father":"पिता","Father/Husband":"पिता/पति","Father/Husband Name":"पिता/पति का नाम","Mobile":"मोबाइल","Email":"ईमेल","Username":"यूज़रनेम","Role":"भूमिका","Cluster":"क्लस्टर","Village":"गाँव","GP":"ग्राम पंचायत","Gram Panchayat":"ग्राम पंचायत","Tehsil":"तहसील","Block":"ब्लॉक","District":"ज़िला","Status":"स्थिति","ID":"आईडी","Farmer":"किसान","Farmer Name":"किसान का नाम","Farmer ID":"किसान आईडी","Area":"क्षेत्र","Amount":"राशि","Time":"समय","User":"यूज़र","Remark":"टिप्पणी","Remarks":"टिप्पणी","Year":"वर्ष","Category":"श्रेणी","Gender":"लिंग","Jan Aadhaar":"जन आधार","Crop":"फसल","Variety":"किस्म","Season":"मौसम","Post":"पद","Photo":"फोटो","Information":"जानकारी","Payment year":"भुगतान वर्ष","All":"सभी","Select":"चुनें","Current":"वर्तमान पासवर्ड","New":"नया पासवर्ड","Total area":"कुल क्षेत्र","NF area":"प्राकृतिक खेती क्षेत्र","Read line":"पढ़ी गई पंक्ति","Land area":"भूमि क्षेत्र","Cluster name":"क्लस्टर का नाम","Village name":"गाँव का नाम","Mapped cluster":"मैप किया गया क्लस्टर","Action":"कार्रवाई",
+  "Total Land Area":"कुल भूमि क्षेत्र","PKVY Cluster ID":"PKVY क्लस्टर आईडी","Cluster ID":"क्लस्टर आईडी","Registration Date":"पंजीकरण तिथि","Participation Status":"भागीदारी स्थिति","Existing/New":"पुराना/नया","Khasra No":"खसरा नंबर","Cultivated Area":"खेती का क्षेत्र","PKVY Area":"PKVY क्षेत्र","Land Ownership":"भूमि स्वामित्व","Soil Test":"मिट्टी जाँच","Crop Area":"फसल क्षेत्र","Activity":"गतिविधि","Activity Area":"गतिविधि क्षेत्र","Adoption Status":"अपनाने की स्थिति","Natural Farming Area":"प्राकृतिक खेती क्षेत्र","Practice":"पद्धति","Practice Area":"पद्धति क्षेत्र","Input Name":"आदान का नाम","Input Quantity":"आदान मात्रा","Training Attended":"प्रशिक्षण लिया","Training Date":"प्रशिक्षण तिथि","Component":"घटक","Distribution Date":"वितरण तिथि","Distribution Location":"वितरण स्थान","Item Name":"सामग्री का नाम","Lot/Batch No":"लॉट/बैच नंबर","Quantity":"मात्रा","Unit":"इकाई","Receiver Confirmation":"प्राप्तकर्ता की पुष्टि","Demonstration Type":"प्रदर्शन का प्रकार","Demonstration Date":"प्रदर्शन तिथि","Location":"स्थान","Demonstration Area":"प्रदर्शन क्षेत्र","Technology":"तकनीक","Intervention":"हस्तक्षेप","Expected Yield":"अपेक्षित उपज","Demonstration Yield":"प्रदर्शन उपज",
+  "Kharif":"खरीफ","Rabi":"रबी","Zaid":"जायद","Owner":"स्वामी","Lease":"पट्टा","Yes":"हाँ","No":"नहीं","Existing":"पुराना","Active":"सक्रिय","Inactive":"निष्क्रिय","Adopted":"अपनाया","Partial":"आंशिक","Not adopted":"नहीं अपनाया","Other":"अन्य","Seed":"बीज","Nutrient":"पोषक तत्व","Input":"आदान","Frontline":"फ्रंटलाइन","General":"सामान्य","Kg":"किलो","Gram":"ग्राम","Litre":"लीटर","Packet":"पैकेट","First year":"पहला वर्ष","Second year":"दूसरा वर्ष","Third year":"तीसरा वर्ष","Mulching":"मल्चिंग","Intercropping":"अंतर फसल","Beejamrit":"बीजामृत","Jeevamrit":"जीवामृत","Ghan Jeevamrit":"घन जीवामृत","Waaphasa":"वाफसा",
+  "Add":"जोड़ें","Add farmer":"किसान जोड़ें","Save farmer":"किसान सेव करें","Save edit":"बदलाव सेव करें","Save draft":"ड्राफ्ट सेव करें","Submit":"जमा करें","Submit for sign":"हस्ताक्षर के लिए भेजें","Send for sign":"हस्ताक्षर के लिए भेजें","Update list and send for sign":"सूची अपडेट कर हस्ताक्षर के लिए भेजें","Calculate":"गणना करें","Build PGS":"PGS बनाएँ","Sign & submit":"हस्ताक्षर कर जमा करें","Return":"वापस भेजें","Clear":"साफ़ करें","Generate PDF":"PDF बनाएँ","Export Excel":"एक्सेल निकालें","Print":"प्रिंट करें","Preview":"पूर्वावलोकन","Upload Excel":"एक्सेल अपलोड करें","Read photo":"फोटो पढ़ें","Load master":"मास्टर से लाएँ","Map cluster":"क्लस्टर मैप करें","Map GP":"ग्राम पंचायत मैप करें","Add to dropdown":"सूची में जोड़ें","Update password":"पासवर्ड बदलें","Delete":"हटाएँ","Delete farmers":"किसान हटाएँ","Download backup":"बैकअप डाउनलोड करें","Download error sheet":"त्रुटि शीट डाउनलोड करें",
+  "New user":"नया यूज़र","Change password":"पासवर्ड बदलें","Map village":"गाँव मैप करें","Supervisor GP map":"पर्यवेक्षक ग्राम पंचायत मैप","AAO mapping":"सहायक कृषि अधिकारी मैपिंग","Supervisor GP assign":"पर्यवेक्षक को ग्राम पंचायत दें","Supervisors in block":"ब्लॉक के पर्यवेक्षक","Office is at":"कार्यालय कहाँ है","Office name":"कार्यालय का नाम","Edit uploaded data":"अपलोड किया डेटा सुधारें","AAO verification":"सहायक कृषि अधिकारी सत्यापन","Supervisor complete":"पर्यवेक्षक हस्ताक्षर","Draw signature":"हस्ताक्षर बनाएँ","Or upload a signature photo":"या हस्ताक्षर की फोटो अपलोड करें","Mask Jan Aadhaar":"जन आधार छिपाएँ","Farmer ID search":"किसान आईडी खोजें","Delete farmers by Gram Panchayat":"ग्राम पंचायत के किसान हटाएँ","Signatures":"हस्ताक्षर","Users":"यूज़र",
+  "Register a farmer once, then use the same Farmer ID in a scheme.":"किसान को एक बार दर्ज करें, फिर वही किसान आईडी योजना में इस्तेमाल करें।","Excel rows can be edited until signed. Reverted rows also appear here.":"हस्ताक्षर से पहले एक्सेल की पंक्तियाँ सुधारी जा सकती हैं। वापस आई पंक्तियाँ भी यहीं दिखती हैं।","No editable records. Signed data is locked.":"सुधारने योग्य रिकॉर्ड नहीं हैं। हस्ताक्षरित डेटा लॉक है।","Natural Farming: Rs 4000 per acre per year, for 2 years.":"प्राकृतिक खेती: ₹4000 प्रति एकड़ प्रति वर्ष, 2 वर्ष तक।","PKVY: amount by activity and hectare.":"PKVY: राशि गतिविधि और हेक्टेयर के अनुसार।","Select the full cluster. Group code is not created here.":"पूरा क्लस्टर चुनें। ग्रुप कोड यहाँ नहीं बनता।","No pending records. They appear for AAO only after the supervisor signs.":"कोई लंबित रिकॉर्ड नहीं। पर्यवेक्षक के हस्ताक्षर के बाद ही ये सहायक कृषि अधिकारी को दिखते हैं।","Sign is not open for this role.":"इस भूमिका के लिए हस्ताक्षर उपलब्ध नहीं है।","Cluster map is for System Admin and District Admin.":"क्लस्टर मैप केवल सिस्टम एडमिन और ज़िला एडमिन के लिए है।","Only System Admin can map a village. Use the dropdown.":"गाँव केवल सिस्टम एडमिन मैप कर सकते हैं। सूची से चुनें।","Mapping a GP will automatically add its cluster and villages.":"ग्राम पंचायत मैप करने पर उसका क्लस्टर और गाँव अपने आप जुड़ जाएँगे।","Only System Admin and District Admin can manage users.":"यूज़र केवल सिस्टम एडमिन और ज़िला एडमिन संभाल सकते हैं।","Or photo / handwritten sheet":"या फोटो / हाथ से लिखी शीट","Add a photo from the form camera or gallery.":"कैमरा या गैलरी से फोटो जोड़ें।","No notifications":"कोई सूचना नहीं","No records":"कोई रिकॉर्ड नहीं","No records yet":"अभी कोई रिकॉर्ड नहीं","No errors":"कोई त्रुटि नहीं","No signature image saved yet.":"अभी कोई हस्ताक्षर सेव नहीं है।","Reading photo...":"फोटो पढ़ी जा रही है…","Create a supervisor first":"पहले पर्यवेक्षक बनाएँ","Map a cluster in this scheme first":"पहले इस योजना में क्लस्टर मैप करें","Map a cluster in the scheme first":"पहले योजना में क्लस्टर मैप करें","No supervisor yet":"अभी कोई पर्यवेक्षक नहीं","Photo could not be read":"फोटो नहीं पढ़ी जा सकी","Photo text is on screen. Submit stays closed until a farmer name and 10-digit mobile are read.":"फोटो का टेक्स्ट स्क्रीन पर है। किसान का नाम और 10 अंकों का मोबाइल पढ़े जाने तक जमा बंद रहेगा।","Free server could not finish this photo in time. Crop only the farmer table and try again.":"सर्वर समय पर फोटो नहीं पढ़ सका। केवल किसान तालिका काटकर दोबारा कोशिश करें।","Photo reader is not installed on this server.":"इस सर्वर पर फोटो रीडर इंस्टॉल नहीं है।",
+  "Search name / mobile":"नाम / मोबाइल खोजें","masked in lists":"सूची में छिपा रहेगा","Agriculture Research Officer":"कृषि अनुसंधान अधिकारी",
+  "A PKVY cluster cannot have more than 25 farmers":"PKVY क्लस्टर में 25 से ज़्यादा किसान नहीं हो सकते","A Natural Farming cluster cannot have more than 125 farmers":"प्राकृतिक खेती क्लस्टर में 125 से ज़्यादा किसान नहीं हो सकते","Scheme area cannot be larger than total land":"योजना क्षेत्र कुल भूमि से बड़ा नहीं हो सकता","Quantity cannot be negative":"मात्रा ऋणात्मक नहीं हो सकती","Draft saved":"ड्राफ्ट सेव हुआ","Saved":"सेव हुआ","Select information first":"पहले जानकारी चुनें","No records to print":"प्रिंट के लिए कोई रिकॉर्ड नहीं","Request failed":"अनुरोध विफल रहा","Sent to Complete for signature":"हस्ताक्षर के लिए भेजा गया","Select a cluster":"क्लस्टर चुनें","Payment list sent for sign":"भुगतान सूची हस्ताक्षर के लिए भेजी गई","PGS sent for sign":"PGS हस्ताक्षर के लिए भेजा गया","Farmer was not found in Farmer Master":"किसान मास्टर में यह किसान नहीं मिला","A reason is required":"कारण लिखना ज़रूरी है","Draw a signature or upload a signature photo first":"पहले हस्ताक्षर बनाएँ या हस्ताक्षर की फोटो अपलोड करें","Signature saved":"हस्ताक्षर सेव हुआ","Added to the dropdown":"सूची में जोड़ दिया गया","Password updated":"पासवर्ड बदल गया","Choose an Excel file first":"पहले एक्सेल फ़ाइल चुनें","Choose a photo":"फोटो चुनें","Added to Farmer Master":"किसान मास्टर में जोड़ दिया गया","Map a cluster first":"पहले क्लस्टर मैप करें","Mapped":"मैप हो गया","Cluster deleted":"क्लस्टर हटा दिया गया","AAO mapped":"सहायक कृषि अधिकारी मैप हो गए","User created":"यूज़र बन गया","This scheme is not open for this role":"यह योजना इस भूमिका के लिए उपलब्ध नहीं है","Current password is wrong":"वर्तमान पासवर्ड गलत है"
+};
+const PATTERNS=[
+  [/^(.+) Dashboard$/, m=>t(m[1])+" डैशबोर्ड"],[/^(.+) Master$/, m=>t(m[1])+" मास्टर"],[/^(.+) Report$/, m=>t(m[1])+" रिपोर्ट"],[/^(.+) Excel$/, m=>(m[1]==="Scheme"?"योजना":t(m[1]))+" एक्सेल"],
+  [/^(\d+) rows?$/, m=>m[1]+" पंक्तियाँ"],[/^Tehsil (\d+)$/, m=>"तहसील "+m[1]],[/^Download (\w+) template$/, m=>t(SCHEMES[m[1]]?SCHEMES[m[1]].title:m[1])+" टेम्पलेट डाउनलोड करें"],
+  [/^This farmer stays in (.+) only\. ID (.+)$/, m=>`यह किसान केवल ${t(m[1])} में रहेगा। आईडी ${m[2]}`],
+  [/^Data comes from (.+) Master\. Farmers (.+)\.$/, m=>`डेटा ${t(m[1])} मास्टर से आता है। किसान ${m[2]}।`],
+  [/^Submit stays hidden until (\d+) farmers are in this scheme\.$/, m=>`इस योजना में ${m[1]} किसान होने तक जमा का बटन नहीं दिखेगा।`],
+  [/^(\d+) record\. Draw a signature or upload a photo below, then Sign and submit\.$/, m=>`${m[1]} रिकॉर्ड। नीचे हस्ताक्षर बनाएँ या फोटो अपलोड करें, फिर हस्ताक्षर कर जमा करें।`],
+  [/^(\d+) lines read, (\d+) farmers found$/, m=>`${m[1]} पंक्तियाँ पढ़ीं, ${m[2]} किसान मिले`],[/^(\d+) lines read$/, m=>`${m[1]} पंक्तियाँ पढ़ीं`],
+  [/^Valid (\d+)\. Invalid (\d+)$/, m=>`सही ${m[1]}। गलत ${m[2]}`],[/^(\d+) saved\. Invalid (\d+)$/, m=>`${m[1]} सेव हुए। गलत ${m[2]}`],[/^(\d+) saved, (\d+) error$/, m=>`${m[1]} सेव हुए, ${m[2]} त्रुटि`],
+  [/^(\d+) farmers\. Total Rs (.+)$/, m=>`${m[1]} किसान। कुल ₹${m[2]}`],
+  [/^Farmers (\d+)\. Offered area (.+?)\. Leader (.*)\. Demo and NF practice: Yes\.$/, m=>`किसान ${m[1]}। प्रस्तावित क्षेत्र ${m[2]}। लीडर ${m[3]}। प्रदर्शन और प्राकृतिक खेती: हाँ।`],
+  [/^(\d+) farmers deleted$/, m=>`${m[1]} किसान हटाए गए`],[/^Cluster mapped\. ID: (.*)$/, m=>`क्लस्टर मैप हो गया। आईडी: ${m[1]}`],[/^Cluster auto add: (.*)$/, m=>`क्लस्टर अपने आप जुड़ा: ${m[1]}`],[/^GP and cluster assigned: (.*)$/, m=>`ग्राम पंचायत और क्लस्टर दिए गए: ${m[1]}`],
+  [/^Saved in (.+) only$/, m=>`केवल ${t(m[1])} में सेव हुआ`],[/^(\d+) records wapas bheje$/, m=>`${m[1]} रिकॉर्ड वापस भेजे गए`],[/^Loaded (.*)$/, m=>`लाया गया: ${m[1]}`],
+  [/^(PGS Data Information|Farmer Payment List|Farmer list): (\d+)$/, m=>`${t(m[1])}: ${m[2]}`]
+];
+function t(s){
+  if(window.LANG!=="hi"||s==null) return s;
+  const k=String(s).trim(); if(!k) return s;
+  if(Object.prototype.hasOwnProperty.call(HI,k)) return HI[k];
+  for(const [re,fn] of PATTERNS){ const m=k.match(re); if(m) return fn(m); }
+  if(k.includes(" · ")) return k.split(" · ").map(x=>t(x)).join(" · ");
+  return s;
 }
+/* Translate visible labels only. Farmer data (table cells, raw blocks) and option values are never changed. */
+function localize(root){
+  if(window.LANG!=="hi") return;
+  const walk=document.createTreeWalker(root, NodeFilter.SHOW_TEXT); const nodes=[];
+  while(walk.nextNode()) nodes.push(walk.currentNode);
+  nodes.forEach(n=>{
+    const p=n.parentElement; if(!p) return;
+    const raw=n.nodeValue, k=raw.trim(); if(!k) return;
+    if(p.closest("pre,textarea,script,style,#pdfBox") ) return;
+    if(p.closest("td,[data-raw]") && !p.closest(".badge,.pill,td.empty,button,a")) return;
+    const out=t(k); if(out===k||out===raw) return;
+    if(p.tagName==="OPTION" && !p.hasAttribute("value")) p.setAttribute("value", k);
+    n.nodeValue=raw.replace(k,out);
+  });
+  root.querySelectorAll("[placeholder],[title],[aria-label]").forEach(el=>["placeholder","title","aria-label"].forEach(a=>{ const v=el.getAttribute(a); if(v){ const o=t(v); if(o!==v) el.setAttribute(a,o); } }));
+}
+function enhance(root){
+  const pt=document.getElementById("pageTitle"), h3=root.querySelector("#panel > .card:first-child > h3:first-child"); if(pt&&h3&&t(h3.textContent.trim())===t(pt.textContent.trim())) h3.remove();
+  root.querySelectorAll("table").forEach(tb=>{
+    if(!tb.parentElement.classList.contains("table-wrap")){ const w=document.createElement("div"); w.className="table-wrap"; tb.replaceWith(w); w.appendChild(tb); }
+    if(tb.dataset.done||tb.closest("#pdfBox")) return; tb.dataset.done="1";
+    const n=tb.querySelectorAll("tr").length-1, cols=tb.querySelectorAll("tr:first-child th").length||1;
+    if(n<=0){ const tr=tb.insertRow(-1); const td=tr.insertCell(0); td.colSpan=cols; td.className="empty"; td.textContent="No records yet"; }
+    else if(n>=8){ const m=document.createElement("div"); m.className="table-meta"; m.textContent=n+" rows"; tb.parentElement.after(m); }
+  });
+  root.querySelectorAll("td").forEach(td=>{ if(td.children.length) return; const s=td.textContent.trim(); if(STATUS[s]) td.innerHTML=badge(s); });
+  root.querySelectorAll(".pill").forEach(p=>{ const s=p.textContent.trim(); if(STATUS[s]){ p.className="badge "+STATUS[s][1]; p.textContent=STATUS[s][0]; } });
+}
+let polishing=false;
+function polish(){ const app=document.getElementById("app"); if(polishing||!app) return; polishing=true; try{ enhance(app); localize(app); }finally{ watcher.takeRecords(); polishing=false; } }
+const watcher=new MutationObserver(polish);
+watcher.observe(document.getElementById("app"),{childList:true,subtree:true});
+function applyLang(){ polish(); }
+function toast(msg){
+  let box=document.getElementById("toasts"); if(!box){ box=document.createElement("div"); box.id="toasts"; box.setAttribute("role","status"); box.setAttribute("aria-live","polite"); document.body.appendChild(box); }
+  const el=document.createElement("div"); el.className="toast"+(/cannot|wrong|required|first$|not found|failed|not open|could not|error|नहीं|गलत|ज़रूरी|पहले/i.test(msg)?" warn":""); el.textContent=msg; box.appendChild(el);
+  setTimeout(()=>{ el.classList.add("out"); setTimeout(()=>el.remove(),320); }, 4200);
+}
+window.alert=msg=>toast(String(t(String(msg))));
 function bind(){ const openLogin=document.getElementById("openLogin"); if(openLogin) openLogin.onclick=()=>{ document.getElementById("loginBox").style.display="block"; }; const go=document.getElementById("go"); if(go){ go.onclick=async()=>{ try{ await api("/api/login",{method:"POST", body:JSON.stringify({username:u.value,password:p.value})}); window.LANG=localStorage.getItem("lang")||"en"; boot(); }catch(e){ err.textContent=e.message; } }; return; } const langBtn=document.getElementById("lang"); if(langBtn) langBtn.onclick=()=>{ window.LANG=window.LANG==="hi"?"en":"hi"; localStorage.setItem("lang", window.LANG); render(); }; document.getElementById("out").onclick=async()=>{ await api("/api/logout",{method:"POST"}); me=null; scheme=null; render(); }; document.querySelectorAll("aside button[data-t]").forEach(b=>b.onclick=()=>show(b.dataset.t)); const slide=document.querySelector("[data-slide]"); if(slide) slide.onclick=()=>{ const box=document.getElementById("schemeSlide"); box.style.display=box.style.display==="none"?"block":"none"; }; document.querySelectorAll("aside button[data-s]").forEach(b=>b.onclick=()=>{ if(!allowedSchemes().includes(b.dataset.s)) return alert("This scheme is not open for this role"); scheme=b.dataset.s; tab="Dashboard"; render(); }); show(scheme?tab:"home").then(applyLang); }
 window.LANG=localStorage.getItem("lang")||"en"; boot();
 </script>
