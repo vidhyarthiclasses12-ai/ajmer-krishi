@@ -907,39 +907,82 @@ def photo_excel():
     except Exception as exc:
         return jsonify({"ok": False, "rows": [], "preview": [], "text": "", "reasons": ["Photo could not be read: " + str(exc)], "message": "Photo could not be read"})
 
+_OCR_LANGS = None
+
+def ocr_langs():
+    """Use Hindi + English when the Hindi pack is installed, else English only."""
+    global _OCR_LANGS
+    if _OCR_LANGS is None:
+        import subprocess
+        try:
+            out = subprocess.check_output(["tesseract", "--list-langs"], stderr=subprocess.STDOUT, text=True, timeout=10)
+            have = {x.strip() for x in out.splitlines()}
+        except Exception:
+            have = set()
+        # English first: with Hindi first the digit 1 in mobile numbers gets dropped
+        _OCR_LANGS = "eng+hin" if "hin" in have else "eng"
+    return _OCR_LANGS
+
+HINDI_DIGITS = str.maketrans("०१२३४५६७८९", "0123456789")
+
+def parse_photo_line(line, scheme):
+    """Pull name, mobile and village out of one line of text read from a photo."""
+    import re
+    clean = line.translate(HINDI_DIGITS).replace("|", " ")
+    m = re.search(r"(?<!\d)[6-9]\d{9}(?!\d)", clean) or re.search(r"(?<!\d)[6-9]\d{4}[ -]\d{5}(?!\d)", clean)
+    mobile = re.sub(r"\D", "", m.group(0)) if m else ""
+    before = clean[:m.start()] if m else clean
+    after = clean[m.end():] if m else ""
+    is_word = lambda w: len(w) > 1 and not any(ch.isdigit() for ch in w)
+    strip = lambda w: w.strip(".,:;-_()[]{}'\"")
+    name = " ".join(w for w in map(strip, before.split()) if is_word(w))
+    village = " ".join([w for w in map(strip, after.split()) if is_word(w)][:3])
+    return {"Farmer Name": name, "Mobile": mobile, "Village": village, "line": line, "scheme": scheme}
+
 def photo_excel_run():
     f = request.files.get("file")
     scheme = request.form.get("scheme") or "pkvy"
+    empty = {"ok": False, "rows": [], "preview": [], "text": ""}
     if not f:
-        return jsonify({"ok": False, "reasons": ["Choose a photo"], "rows": [], "preview": [], "text": ""})
+        return jsonify({**empty, "reasons": ["Choose a photo"]})
     raw = f.read()
-    import io, shutil, subprocess, tempfile, re
-    from PIL import Image
-    path = tempfile.mktemp(suffix=".png")
+    import io, shutil, subprocess, tempfile
+    from PIL import Image, ImageChops, ImageFilter, ImageOps
     try:
-        img = Image.open(io.BytesIO(raw)).convert("L")
-        img.thumbnail((700, 700))
-        img = img.point(lambda x: 0 if x < 150 else 255)
-        img.save(path, "PNG")
+        img = ImageOps.exif_transpose(Image.open(io.BytesIO(raw))).convert("L")
+        longest = max(img.size)
+        if longest > 1800:
+            img.thumbnail((1800, 1800))
+        elif longest < 1200:
+            k = 1200 / longest
+            img = img.resize((int(img.width * k), int(img.height * k)), Image.LANCZOS)
+        # Even out shadows and uneven light: subtract the paper background, leaving dark text on white
+        small = img.resize((max(1, img.width // 8), max(1, img.height // 8)))
+        paper = small.filter(ImageFilter.MaxFilter(5)).filter(ImageFilter.GaussianBlur(6)).resize(img.size)
+        img = ImageOps.autocontrast(ImageOps.invert(ImageChops.subtract(paper, img)), cutoff=1)
     except Exception as exc:
-        return jsonify({"ok": False, "reasons": ["This file is not a photo: " + str(exc)], "rows": [], "preview": [], "text": ""})
+        return jsonify({**empty, "reasons": ["This file is not a photo: " + str(exc)]})
     if not shutil.which("tesseract"):
-        return jsonify({"ok": False, "reasons": ["Photo reader is not installed on this server."], "rows": [], "preview": [], "text": ""})
+        return jsonify({**empty, "reasons": ["Photo reader is not installed on this server."]})
+    tmp = tempfile.NamedTemporaryFile(suffix=".png", delete=False)
+    tmp.close()
     try:
-        text = subprocess.check_output(["tesseract", path, "stdout", "-l", "eng", "--psm", "6"], stderr=subprocess.DEVNULL, text=True, timeout=18)
+        img.save(tmp.name, "PNG")
+        text = subprocess.check_output(["tesseract", tmp.name, "stdout", "-l", ocr_langs(), "--psm", "6"], stderr=subprocess.DEVNULL, text=True, timeout=75)
     except subprocess.TimeoutExpired:
-        return jsonify({"ok": False, "reasons": ["Free server could not finish this photo in time. Crop only the farmer table and try again."], "rows": [], "preview": [], "text": ""})
+        return jsonify({**empty, "reasons": ["Free server could not finish this photo in time. Crop only the farmer table and try again."]})
     except Exception as exc:
-        return jsonify({"ok": False, "reasons": ["Photo reader failed: " + str(exc)], "rows": [], "preview": [], "text": ""})
+        return jsonify({**empty, "reasons": ["Photo reader failed: " + str(exc)]})
+    finally:
+        try:
+            os.remove(tmp.name)
+        except OSError:
+            pass
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
-    rows = []
-    for line in lines:
-        parts = line.split()
-        mobile = next((x for x in parts if re.fullmatch(r"\d{10}", x)), "")
-        rows.append({"Farmer Name": parts[0] if parts else "", "Mobile": mobile, "Village": parts[-1] if len(parts) > 1 else "", "line": line, "scheme": scheme})
+    rows = [parse_photo_line(line, scheme) for line in lines]
     valid = [r for r in rows if r["Farmer Name"] and r["Mobile"]]
     reasons = [] if valid else ["Photo text is on screen. Submit stays closed until a farmer name and 10-digit mobile are read."]
-    return jsonify({"ok": bool(valid), "rows": valid[:50], "preview": rows[:40], "text": text[:2000], "reasons": reasons, "message": str(len(lines)) + " lines read"})
+    return jsonify({"ok": bool(valid), "rows": valid[:50], "preview": rows[:40], "text": text[:2000], "reasons": reasons, "message": f"{len(lines)} lines read, {len(valid)} farmers found"})
 
 @app.post("/api/photo-save")
 @login_required
