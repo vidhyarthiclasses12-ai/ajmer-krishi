@@ -694,3 +694,27 @@ window.LANG=localStorage.getItem("lang")||"en"; boot();
 </script>
 </body>
 </html>
+const mobile = String(value ?? "").trim();
+
+if (!/^[6-9]\d{9}$/.test(mobile)) {
+    return "कृपया सही 10 अंकों का मोबाइल नंबर दर्ज करें";
+}// Admin को Signature करने से रोकें
+const preventAdminSignature = (req, res, next) => {
+    if (req.user && req.user.role === "admin") {
+        return res.status(403).json({
+            success: false,
+            message: "Admin को Signature करने की अनुमति नहीं है।"
+        });
+    }
+
+    next();
+};app.post(
+    "/api/signature",
+    authenticateUser,
+    preventAdminSignature,
+    saveSignature
+);{user?.role !== "admin" && (
+    <button onClick={handleSignature}>
+        Sign करें
+    </button>
+)}
